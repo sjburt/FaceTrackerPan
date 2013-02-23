@@ -1,0 +1,6 @@
+*.xcodeproj
+*.o
+*.hex
+*.elf
+.DS_Store
+.svn
