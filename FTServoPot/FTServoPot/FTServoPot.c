@@ -8,7 +8,8 @@
 #define F_CPU 16000000
 #include <avr/io.h>
 #include <avr/interrupt.h>
-
+#include <util/delay.h>
+#include "uart.h"
 /*
    static void uart_9600(void)
    {
@@ -30,23 +31,25 @@ void initPWM();
 
 uint16_t getADC();
 
-uint16_t ADCRead;
+uint16_t ADCRead = 0;
 
 int main(void)
 {
-	
+	uint16_t potValue = 0;
 	initADC0();
 	
 //  TODO: Initialize PWM on PD3/OC2B,  50hz cycle
     
-	_delay_ms(10);   // wait a little while for things to come online.
+//	_delay_ms(10);   // wait a little while for things to come online.
 	
 	while(1)
     {
-		uint16_t PotValue = getADC();
+		potValue = getADC() >> 2;
+		
+		
 		
 
-//  TODO: Set PWM on period.
+		//  TODO: Set PWM on period.
 
         
     }
@@ -75,5 +78,5 @@ uint16_t getADC()
 ISR(ADC_vect)
 {
 	uint8_t ADCLow= ADCL;
-	ADCRead = ADCH << 8 + ADCLow;
+	ADCRead = (ADCH << 8) + ADCLow;
 }
