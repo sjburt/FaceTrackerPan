@@ -3,4 +3,5 @@
 *.hex
 *.elf
 .DS_Store
-.svn
+*.d
+FTServoPot/FTServoPot/Debug/*
