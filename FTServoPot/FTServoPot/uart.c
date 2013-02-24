@@ -235,7 +235,7 @@ Date        Description
   #define UART0_DATA     UDR0
   #define UART0_UDRIE    UDRIE0
 #elif defined(__AVR_ATmega3290__) ||\
-      defined(__AVR_ATmega6490__) ||
+      defined(__AVR_ATmega6490__) 
   /* TLS-Separated these two from the previous group because of inconsistency in the USART_RX */
   /* ATmega with one USART */
   #define ATMEGA_USART0
