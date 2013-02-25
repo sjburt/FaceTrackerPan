@@ -5,3 +5,4 @@
 .DS_Store
 *.d
 FTServoPot/FTServoPot/Debug/*
+FTServoComms/FTServoComms/Debug/*

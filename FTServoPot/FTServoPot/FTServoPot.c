@@ -102,6 +102,7 @@ void initPWM()
 	 ICR1=20000;  //50Hz (Period = 20ms).
 
 	 DDRB|=(1<<PB1);   //PWM Pins as Out
+	 
 }
 
 void initServo()
