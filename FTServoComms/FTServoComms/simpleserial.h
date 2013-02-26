@@ -20,7 +20,7 @@ typedef enum SerMsg {
 char initSerial(uint16_t baud); // Returns 0 if we got the port going. Halts if we didn't.
 char handshake();  // Returns 0 if handshake succeeded
 char getMessage(SerMsg *msg,uint16_t *data);
-
+void clean_string(uint8_t* clean,const uint8_t* dirty);
 
 
 #endif /* SIMPLESERIAL_H_ */

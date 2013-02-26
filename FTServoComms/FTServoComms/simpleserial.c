@@ -11,7 +11,6 @@
 #include "uart.h"
 #include "simpleserial.h"
 
-#define MSG_SIZE 6
 
 typedef enum MODE {
 	REGULAR =0,
@@ -46,10 +45,10 @@ char handshake()
 	_delay_ms(100);
 	
 	if (uart_getc() == 'a')
-		uart_putc('b');
+	uart_putc('b');
 	else
-		uart_putc('d');
-		
+	uart_putc('d');
+	
 	while(uart_available()==0)
 	_delay_ms(100);
 	
@@ -66,15 +65,65 @@ char handshake()
 	}
 }
 
+void clean_string(uint8_t* clean,const uint8_t* dirty)
+{
+	uint8_t cleanidx = 0;
+	uint8_t dirtyidx = 0;
+	
+	while(dirty[dirtyidx++]==0x7F);
+
+	while(dirty[dirtyidx++-1]!=0x7F)
+	{
+		if (dirty[dirtyidx-2]==0x7E)
+		{
+			clean[cleanidx++]=((dirty[dirtyidx-1]) ^ (0x20));
+			dirtyidx++;
+		}
+		else
+		{
+			clean[cleanidx++]=dirty[dirtyidx-2];
+		}
+	}
+	clean[cleanidx] = '\0';
+
+}
+
+void dirty_string(uint8_t* dirty, const uint8_t *clean)
+{
+	uint8_t cleanidx =0;
+	uint8_t dirtyidx =0;
+	
+	dirty[dirtyidx++] = 0x7F;
+	while(clean[cleanidx++] != '\0')
+	{
+		if (clean[cleanidx-1] == 0x7F)
+		{	dirty[dirtyidx++] = 0x7E;
+			dirty[dirtyidx++] = 0x7F ^ 0x20;
+		}
+		else if (clean[cleanidx-1] == 0x7E)
+		{	dirty[dirtyidx++] = 0x7E;
+			dirty[dirtyidx++] = 0x7E ^ 0x20;
+		}
+		else
+		{
+			dirty[dirtyidx++]=clean[cleanidx-1];
+		}
+	}
+	dirty[dirtyidx] = 0x7F;
+	dirty[dirtyidx+1] = '\0';
+}
+
+
+
 char getMessage(SerMsg *msg,uint16_t *data)
 {
+	uint8_t raw_string[10];
+	uint8_t cln_string[10];
 	static uint16_t loc =512;
 	switch(PortMode)
 	{
 		case DEBUG:
-		
-		
-		uart_puts_P("\n f/v >");
+		uart_puts_P("\r\n f/v >");
 		while(uart_available()==0);
 		
 		char c = uart_getc();
@@ -94,45 +143,44 @@ char getMessage(SerMsg *msg,uint16_t *data)
 		return 0;
 		break;
 		case REGULAR:
-		
-		if (uart_available()<MSG_SIZE)
+
+		if (uart_available()>0)
 		{
-			if (uart_available() ==0)
-			uart_putc('g');
-			// no command waiting
-			*msg = NULL;
-			return 1; // wait
-		}
-		else
-		{
-			uint8_t raw[MSG_SIZE];
-			uint8_t i;
-			for (i=0;i<MSG_SIZE;i++)
-			raw[i] = uart_getc();
-			
-			
-			switch (raw[0])
+			uint8_t i =0;
+			raw_string[0] = uart_getc();
+			while (raw_string[i] != 0x7F && uart_available())
 			{
-				case 'p':
+				raw_string[i++] = uart_getc();  // get to new frame
+			}
+			raw_string[i]=uart_getc();
+			if (raw_string[i]==0x7F)
+			{
+				raw_string[i] = uart_getc();
+			}
+			while (uart_available())
+			{
+				raw_string[++i] = uart_getc();
+				if (raw_string[i]==0x7F)
+			{break;}
+			}
+			clean_string(cln_string,raw_string);
+		}
+		
+		switch(cln_string[0])
+		{
+			case 'p':
 				*msg = POS;
-				
-				
-				loc = ((raw[1]-64) << 6) + (raw[2]-64);
-				*data = loc;
-				
-				return 0; //successful
+				*data = (cln_string[1] << 8) + cln_string[2];
+				return 0; //success!
 				break;
-				case 's':
+			case 's':
 				*msg = STOP;
 				*data = 0;
 				return 0;
 				break;
-				default:
-				*msg = NULL;
-				*data = 0;
-				return -1;
-			}
 		}
+		
+		
 		break;
 		default:
 		*msg = NULL;
