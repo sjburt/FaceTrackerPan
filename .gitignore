@@ -6,3 +6,6 @@
 *.d
 FTServoPot/FTServoPot/Debug/*
 FTServoComms/FTServoComms/Debug/*
+TestCode/Debug/*
+TestCode/ipch/*
+TestCode/TestCode/Debug/*
