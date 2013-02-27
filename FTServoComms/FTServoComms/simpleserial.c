@@ -41,16 +41,40 @@ char initSerial(uint16_t baud)
 char handshake()
 {
 	uart_flush();
+	_delay_ms(2000);
+	
 	while(uart_available()==0)
-	_delay_ms(100);
+	{
+
+		PORTB |=(1<<PB5);
+		_delay_ms(100);
+		PORTB &=~(1<<PB5);
+		_delay_ms(100);
+		
+	}
 	
 	if (uart_getc() == 'a')
-	uart_putc('b');
-	else
-	uart_putc('d');
+	{
+		PORTB |=(1<<PB5);
+		_delay_ms(50);
+		PORTB &=~(1<<PB5);
+		_delay_ms(50);
+		PORTB |=(1<<PB5);
+		_delay_ms(50);
+		PORTB &=~(1<<PB5);
+		_delay_ms(50);
+		
+	}
 	
+	uart_putc('b');
 	while(uart_available()==0)
-	_delay_ms(100);
+	{	
+		PORTB |=(1<<PB5);
+		_delay_ms(150);
+		
+		PORTB &= ~(1<<PB5);
+		_delay_ms(50);
+	}
 	
 	if (uart_getc() == 'c')
 	{

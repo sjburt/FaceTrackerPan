@@ -44,19 +44,14 @@ int main(void)
 	_delay_ms(10);   // wait a little while for things to come online.	
 	sei();
 	 DDRB|=(1<<PB1);  
-	 			PORTB |=(1<<PB5);
-	 			_delay_ms(200);
-	 			
-	 			PORTB &= ~(1<<PB5);
-	 			_delay_ms(200);
-
+	DDRB|=(1<<PB5); 
 	handshake();
 	
-			PORTB |=(1<<PB5);
-			_delay_ms(200);
-			
-			PORTB &= ~(1<<PB5);
-			_delay_ms(200);
+	 PORTB |=(1<<PB5);
+	 _delay_ms(500);
+	 			
+	 PORTB &= ~(1<<PB5);
+	 _delay_ms(500);
 
 
 	while(1)
