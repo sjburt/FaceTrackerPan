@@ -54,6 +54,7 @@ char handshake()
 	
 	if (uart_getc() == 'c')
 	{
+		uart_putc('d');
 		PortMode = REGULAR;
 		return(0);  // handshake success
 	}
@@ -164,23 +165,27 @@ char getMessage(SerMsg *msg,uint16_t *data)
 			{break;}
 			}
 			clean_string(cln_string,raw_string);
-		}
-		
-		switch(cln_string[0])
-		{
-			case 'p':
+			
+			
+			switch(cln_string[0])
+			{
+				case 'p':
 				*msg = POS;
 				*data = (cln_string[1] << 8) + cln_string[2];
 				return 0; //success!
 				break;
-			case 's':
+				case 's':
 				*msg = STOP;
 				*data = 0;
 				return 0;
 				break;
+			}
+			
 		}
-		
-		
+		else
+		{
+			uart_putc('r');
+		}
 		break;
 		default:
 		*msg = NULL;
