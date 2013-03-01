@@ -114,7 +114,8 @@ class PyBasicComms:
     
 
 def main():
-    portname = "COM3"
+    #portname = "COM3"
+    portname = "/dev/tty.usbmodemfd121"
     p = PyBasicComms(portname)
     p.testmode()
 
