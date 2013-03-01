@@ -68,7 +68,7 @@ char handshake()
 	
 	uart_putc('b');
 	while(uart_available()==0)
-	{	
+	{
 		PORTB |=(1<<PB5);
 		_delay_ms(150);
 		
@@ -194,7 +194,12 @@ char getMessage(SerMsg *msg,uint16_t *data)
 			switch(cln_string[0])
 			{
 				case 'p':
-				*msg = POS;
+				*msg = YAWPOS;
+				*data = (cln_string[1] << 8) + cln_string[2];
+				return 0; //success!
+				break;
+				case 'o':
+				*msg = PITCHPOS;
 				*data = (cln_string[1] << 8) + cln_string[2];
 				return 0; //success!
 				break;
@@ -208,7 +213,8 @@ char getMessage(SerMsg *msg,uint16_t *data)
 		}
 		else
 		{
-			uart_putc('r');
+			uart_putc('p');
+			uart_putc('o');
 		}
 		break;
 		default:

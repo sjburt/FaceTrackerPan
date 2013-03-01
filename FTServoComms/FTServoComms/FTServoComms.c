@@ -59,7 +59,7 @@ int main(void)
 		err = getMessage(&msg,&dest);
 		if (err==0)
 		{
-			setServo(dest);
+			setServo(msg,dest);
 		}		
 		_delay_ms(100);
     }
@@ -70,10 +70,11 @@ int main(void)
 void initPWM()
 {
 	 TCCR1A|=(1<<COM1A1)|(1<<COM1B1)|(1<<WGM11);       
-	 TCCR1B|=(1<<WGM13)|(1<<WGM11)|(1<<CS11); //PRESCALER=8 MODE 10(phase correct)
+	 TCCR1B|=(1<<WGM13)|(1<<CS11); //PRESCALER=8 MODE 10(phase correct)
 	 ICR1=20000;  //50Hz (Period = 20ms).
 
 	 DDRB|=(1<<PB1);   //PWM Pins as Out
+	 DDRB|=(1<<PB2);
 }
 
 void initServo()
@@ -81,11 +82,18 @@ void initServo()
 	initPWM();
 }
 
-void setServo(uint16_t dest)
+void setServo(SerMsg msg  ,uint16_t dest)
 {
 	int servo = dest*1.8+600;
-	
-	OCR1A = servo;
+	switch (msg)
+	{
+		case YAWPOS:
+			OCR1A = servo;
+			break;
+		case PITCHPOS:
+			OCR1B = servo;
+			break;
+	}	
 	
 
 }

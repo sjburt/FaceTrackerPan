@@ -11,8 +11,9 @@
 
 typedef enum SerMsg {
 	NULL = 0,
-	POS  = 1,
-	STOP = 2,
+	YAWPOS = 1,
+	PITCHPOS = 2,
+	STOP = -1,
 	
 	} SerMsg;
 
