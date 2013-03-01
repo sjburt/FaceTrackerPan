@@ -46,16 +46,16 @@ class SerThread(threading.Thread):
             data = self.ser.read(1)   
 
             if data == "r":
-                if self.i>1023:
-                    self.i=1023
-                if self.i<0:
-                    self.i=0
-                packet=bytearray(chr(0x7F)+'p'+chr((int(self.i)>>8))+chr(self.i%256)+chr(0x7f))
-                self.ser.write(packet)
+               packet=bytearray(chr(0x7F)+'p'+chr((int(self.i)>>8))+chr(self.i%256)+chr(0x7f))
+               self.ser.write(packet)
                
     def updatei(self,newi):
-        self.i=newi
-        print self.i
+        if newi>1023:
+            newi=1023
+        if newi<0:
+            newi=0
+        
+        self.i=int(newi)
     def stop(self):
         self.ser.close()
     
@@ -76,10 +76,10 @@ class PyBasicComms:
         self.i = i
         self.sthread.updatei(self.i)
     def moveCW(self):
-        self.i = self.i+1
+        self.i = self.i+5
         self.sthread.updatei(self.i)
     def moveCCW(self):
-        self.i = self.i-1
+        self.i = self.i -5
         self.sthread.updatei(self.i)
         
     def stop(self):
