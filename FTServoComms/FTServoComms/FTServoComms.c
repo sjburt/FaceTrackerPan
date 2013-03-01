@@ -26,7 +26,7 @@
 void initADC0();
 void initServo();
 void initPWM();
-void setServo(uint16_t dest);
+void setServo(SerMsg msg, uint16_t dest);
 uint16_t getADC();
 
 uint16_t volatile ADCRead = 0;
@@ -43,16 +43,14 @@ int main(void)
 	char err;
 	_delay_ms(10);   // wait a little while for things to come online.	
 	sei();
-	 DDRB|=(1<<PB1);  
+	DDRB|=(1<<PB1);
+	DDRB|=(1<<PB2);
 	DDRB|=(1<<PB5); 
-	handshake();
 	
-	 PORTB |=(1<<PB5);
-	 _delay_ms(500);
-	 			
-	 PORTB &= ~(1<<PB5);
-	 _delay_ms(500);
+	handshake();
 
+	setServo(PITCHPOS,512);
+	setServo(YAWPOS,450);
 
 	while(1)
     {
@@ -92,6 +90,11 @@ void setServo(SerMsg msg  ,uint16_t dest)
 			break;
 		case PITCHPOS:
 			OCR1B = servo;
+			break;
+		case NULL:
+		case STOP:
+			break;
+		default:
 			break;
 	}	
 	

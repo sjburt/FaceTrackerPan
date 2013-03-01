@@ -41,7 +41,7 @@ char initSerial(uint16_t baud)
 char handshake()
 {
 	uart_flush();
-	_delay_ms(2000);
+	_delay_ms(100);
 	
 	while(uart_available()==0)
 	{
@@ -70,10 +70,10 @@ char handshake()
 	while(uart_available()==0)
 	{
 		PORTB |=(1<<PB5);
-		_delay_ms(150);
+		_delay_ms(20);
 		
 		PORTB &= ~(1<<PB5);
-		_delay_ms(50);
+		_delay_ms(20);
 	}
 	
 	if (uart_getc() == 'c')
@@ -144,27 +144,41 @@ char getMessage(SerMsg *msg,uint16_t *data)
 {
 	uint8_t raw_string[10];
 	uint8_t cln_string[10];
-	static uint16_t loc =512;
+	static uint16_t yaw =512;
+	static uint16_t pitch=512;
 	switch(PortMode)
 	{
 		case DEBUG:
-		uart_puts_P("\r\n f/v >");
+		uart_puts_P("\r\n wasd >");
 		while(uart_available()==0);
 		
 		char c = uart_getc();
 		
 		switch (c)
 		{
-			case 'f':
-			loc+=50;
+			case 'a':
+			yaw+=50;
+			*msg = YAWPOS;
+			*data = yaw;
 			break;
-			case 'v':
-			loc-=50;
+			case 'd':
+			yaw-=50;
+			*msg = YAWPOS;
+			*data = yaw;
+			break;
+			case 'w':
+			pitch -=50;
+			*msg = PITCHPOS;
+			*data = pitch;
+			break;
+			case 's':
+			pitch +=50;
+			*msg = PITCHPOS;
+			*data = pitch;
 			break;
 		}
 		
-		*msg = POS;
-		*data = loc;
+
 		return 0;
 		break;
 		case REGULAR:

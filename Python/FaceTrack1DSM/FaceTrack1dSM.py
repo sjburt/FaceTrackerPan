@@ -16,77 +16,91 @@ import time
 
 class PID:
     
-	def __init__(self, P=2.0, I=0.0, D=1.0, Derivator=0, Integrator=0, Integrator_max=500, Integrator_min=-500):
+    def __init__(self, P=2.0, I=0.0, D=1.0, depth=2,errFF=.95, Derivator=0, Integrator=0, Integrator_max=500, Integrator_min=-500):
 
-		self.Kp=P
-		self.Ki=I
-		self.Kd=D
-		self.Derivator=Derivator
-		self.Integrator=Integrator
-		self.Integrator_max=Integrator_max
-		self.Integrator_min=Integrator_min
+        self.Kp=P
+        self.Ki=I
+        self.Kd=D
+        self.Derivator=Derivator
+        self.Integrator=Integrator
+        self.Integrator_max=Integrator_max
+        self.Integrator_min=Integrator_min
 
-		self.set_point=0.0
-		self.error=0.0
+        self.kerrFF = depth
+        self.depth = errFF
+        self.depthbuffer = list()
+        for i in range(self.depth):
+            self.depthbuffer.append(0)
+            
+        self.set_point=0.0
+        self.error=0.0
 
-	def update(self,current_value):
-		"""
-		Calculate PID output value for given reference input and feedback
-		"""
+    def update(self,current_value):
+        """
+        Calculate PID output value for given reference input and feedback
+        """
 
-		self.error = self.set_point - current_value
+        self.error = self.set_point - current_value
 
-		self.P_value = self.Kp * self.error
-		self.D_value = self.Kd * ( self.error - self.Derivator)
-		self.Derivator = self.error
+        self.P_value = self.Kp * self.error
+        self.D_value = self.Kd * ( self.error - self.Derivator)
+        self.Derivator = self.error
 
-		self.Integrator = self.Integrator + self.error
+        self.Integrator = self.Integrator + self.error
 
-		if self.Integrator > self.Integrator_max:
-			self.Integrator = self.Integrator_max
-		elif self.Integrator < self.Integrator_min:
-			self.Integrator = self.Integrator_min
+        if self.Integrator > self.Integrator_max:
+            self.Integrator = self.Integrator_max
+        elif self.Integrator < self.Integrator_min:
+            self.Integrator = self.Integrator_min
 
-		self.I_value = self.Integrator * self.Ki
+        self.I_value = self.Integrator * self.Ki
+        
+        FF_val = self.kerrFF * sum(self.depthbuffer) / self.depth       
+        
+        PID = self.P_value + self.I_value + self.D_value - FF_val
+        
+        self.depthbuffer.pop(0)
+        self.depthbuffer.append(PID)
 
-		PID = self.P_value + self.I_value + self.D_value
+        return PID
 
-		return PID
+    def setPoint(self,set_point):
+        """
+        Initilize the setpoint of PID
+        """
+        self.set_point = set_point
+        self.Integrator=0
+        self.Derivator=0
 
-	def setPoint(self,set_point):
-		"""
-		Initilize the setpoint of PID
-		"""
-		self.set_point = set_point
-		self.Integrator=0
-		self.Derivator=0
+    def setIntegrator(self, Integrator):
+        self.Integrator = Integrator
 
-	def setIntegrator(self, Integrator):
-		self.Integrator = Integrator
+    def setDerivator(self, Derivator):
+        self.Derivator = Derivator
 
-	def setDerivator(self, Derivator):
-		self.Derivator = Derivator
+    def setKp(self,P):
+        self.Kp=P
 
-	def setKp(self,P):
-		self.Kp=P
+    def setKi(self,I):
+        self.Ki=I
 
-	def setKi(self,I):
-		self.Ki=I
+    def setKd(self,D):
+        self.Kd=D
 
-	def setKd(self,D):
-		self.Kd=D
+    def setKerFF(self,erff):
+        self.KerFF=erff
+    
+    def getPoint(self):
+        return self.set_point
 
-	def getPoint(self):
-		return self.set_point
+    def getError(self):
+        return self.error
 
-	def getError(self):
-		return self.error
+    def getIntegrator(self):
+        return self.Integrator
 
-	def getIntegrator(self):
-		return self.Integrator
-
-	def getDerivator(self):
-		return self.Derivator
+    def getDerivator(self):
+        return self.Derivator
 
 
 class Servo:
@@ -100,7 +114,7 @@ class Servo:
             sys.exit(-1)
         self.setpos(512)
         time.sleep(.1)
-        self.control = PID(.1,0.01,0.1)
+        self.control = PID(.1,0.01,0.01)
         self.control.setPoint(320)
         
     def handshake(self):
@@ -114,7 +128,7 @@ class Servo:
         
         
         self.pos = pos
-        self.p.seti(pos) 
+        self.p.setyaw(pos) 
             
     def scnloc(self,loc):
          ci = self.control.update(loc)
