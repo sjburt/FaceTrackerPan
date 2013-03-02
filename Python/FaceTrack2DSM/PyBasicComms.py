@@ -42,7 +42,7 @@ class SerThread(threading.Thread):
         print "waiting for boot"
         time.sleep(2)
         self.ser.flushInput()
-        done = 0
+        done = False
         print "starting handshake"
         while not done :        
             self.ser.write('a')
@@ -51,7 +51,7 @@ class SerThread(threading.Thread):
             print ch
             if ch == 'b':
                 self.ser.write('c')
-                done = 1
+                done = True
             else:
                 print "?"
         if self.ser.read(1)=='d':
