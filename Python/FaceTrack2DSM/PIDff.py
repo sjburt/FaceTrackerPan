@@ -25,20 +25,23 @@ class PIDff:
         self.depthbuffer = list()
         for i in range(self.depth):
             self.depthbuffer.append(0)
-            
+        
+        
+        
+        
         self.set_point=0.0
         self.error=0.0
-
+        self.old_error=self.error
     def update(self,current_value):
         """
         Calculate PID output value for given reference input and feedback
         """
 
         self.error = self.set_point - current_value
-
         self.P_value = self.Kp * self.error
         self.D_value = self.Kd * ( self.error - self.Derivator)
-        self.Derivator = self.error
+        self.Derivator = (self.error + self.old_error)/2
+        
 
         self.Integrator = self.Integrator + self.error
 
@@ -55,7 +58,8 @@ class PIDff:
         
         self.depthbuffer.pop(0)
         self.depthbuffer.append(PID)
-
+        self.olderror = self.error
+        
         return PID
 
     def setPoint(self,set_point):

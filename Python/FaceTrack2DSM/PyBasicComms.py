@@ -33,20 +33,23 @@ class SerThread(threading.Thread):
         self.portname = portname
         self.flag = flag
         self.ser.flushInput()
+        self.ser.flushOutput()
         
     def handshake(self):
+        self.ser.setDTR(False)
+        time.sleep(.1)
+        self.ser.setDTR(True)
         print "waiting for boot"
-        time.sleep(4)
+        time.sleep(2)
+        self.ser.flushInput()
         done = 0
         print "starting handshake"
         while not done :        
             self.ser.write('a')
-            print "a" 
             self.ser.timeout=5
             ch = self.ser.read(1)
             print ch
             if ch == 'b':
-                print "b,c"
                 self.ser.write('c')
                 done = 1
             else:
@@ -65,11 +68,12 @@ class SerThread(threading.Thread):
 
             if data == "p":
                 packet=dirty('p'+chr((int(self.yaw)>>8))+chr(self.yaw%256))
+             
             elif data == "o":
                 packet=dirty('o'+chr((int(self.pitch)>>8))+chr(self.pitch%256))
-                   
+ 
             self.ser.write(packet)
-               
+              
     def updateyaw(self,newyaw):
         if newyaw>1023:
             newyaw=1023
@@ -150,7 +154,6 @@ class PyBasicComms:
                 
         self.flag.clear()
         self.sthread.join()   
-        self.sthread.stop()
         
     
 

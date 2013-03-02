@@ -15,6 +15,8 @@ import StateMachine
 import threading
 import time
 
+
+
 YAW_GOAL = 320
 PITCH_GOAL = 240
 
@@ -55,7 +57,8 @@ class faceWidget(QtGui.QWidget):
     def __init__(self, parent=None):
         self.runSM = threading.Event()
         self.handshakedone=threading.Event()
-        self.SM = StateMachine.stateMachine(self.runSM,self.handshakedone)        
+        self.SM = StateMachine.stateMachine(self.runSM,self.handshakedone)  
+        self.SM.daemon = True
         QtGui.QWidget.__init__(self)
         self._capture = cv.CreateCameraCapture(0)
         self.time = time.time()
@@ -177,7 +180,9 @@ class faceWidget(QtGui.QWidget):
                                      min_neighbors=2, flags=cv.CV_HAAR_DO_CANNY_PRUNING)
        
             
-
+    def closeEvent(self,event):
+        self.runSM.clear()
+        
 
 
 class mainwindow(QtGui.QMainWindow):
@@ -236,7 +241,7 @@ class mainwindow(QtGui.QMainWindow):
         
         self.show()
 
-
+    
 
 
 def main():
@@ -245,7 +250,7 @@ def main():
 
     m = mainwindow()
     
-    print "hi"
+
     sys.exit(app.exec_())
         
     
