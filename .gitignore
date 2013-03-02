@@ -11,3 +11,5 @@ TestCode/ipch/*
 TestCode/TestCode/Debug/*
 
 *.pyc
+
+Python/FaceTrack1D/PyBasicComms.pyc
