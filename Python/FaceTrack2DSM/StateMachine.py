@@ -74,7 +74,7 @@ class Servo:
             from serial.serialutil import SerialException
             self.p = PyBasicComms.PyBasicComms("/dev/tty.usbmodemfd121")
         except (SerialException):
-            print "Com3 not working"
+            print "Couldn't open port not working"
           
             
         self.yaw =YAW_DEF 
@@ -91,7 +91,7 @@ class Servo:
             pos = YAW_MIN
         self.yaw = pos
         self.p.setyaw(pos) 
-        print pos
+        
 
     def setpitch(self,pos):
         if pos > PITCH_MAX:
@@ -100,7 +100,7 @@ class Servo:
             pos = PITCH_MIN
         self.pitch = pos
         self.p.setpitch(pos) 
-        print pos
+        
 
 
 
@@ -131,7 +131,7 @@ class stateMachine(threading.Thread):
         cx=0
         cy=0
         while(self.runSM.isSet()):
-            print self.errx,cx,self.erry,cy
+            
             if self.state == StateEnum('Init'):
                 event = EventEnum('done_init')
             elif self.state == StateEnum('WaitLong'):
