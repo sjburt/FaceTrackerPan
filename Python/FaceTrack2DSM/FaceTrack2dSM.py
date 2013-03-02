@@ -51,14 +51,9 @@ class faceWidget(QtGui.QWidget):
     
     facex = QtCore.pyqtSignal(int)    
     facey = QtCore.pyqtSignal(int)
-    pitch= QtCore.pyqtSignal(int)    
-    yaw = QtCore.pyqtSignal(int)
-    status= QtCore.pyqtSignal(str)
+    hasFace= QtCore.pyqtSignal(bool)
     def __init__(self, parent=None):
-        self.runSM = threading.Event()
-        self.handshakedone=threading.Event()
-        self.SM = StateMachine.stateMachine(self.runSM,self.handshakedone)  
-        self.SM.daemon = True
+
         QtGui.QWidget.__init__(self)
         self._capture = cv.CreateCameraCapture(0)
         self.time = time.time()
@@ -96,9 +91,7 @@ class faceWidget(QtGui.QWidget):
         self._timer.timeout.connect(self.queryFrame)
 
         
-        self.runSM.set()
-        self.SM.start()
-        self.handshakedone.wait()
+
         self._timer.start(50)
         
 
@@ -150,22 +143,13 @@ class faceWidget(QtGui.QWidget):
             x = pos[0]*self.xscale+pos[2]*self.xscale/2 - YAW_GOAL 
             y = pos[1]*self.xscale+pos[3]*self.xscale/2 - PITCH_GOAL
             gotFace = True
-        self.SM.setStatus(gotFace,x,y)
+        
             
 
-        state =self.SM.getState()
-        
-        
-
-        self.status.emit(str(state))
-        if state==StateMachine.StateEnum('Acquired'):  
-            self.facex.emit(x)
-            self.facey.emit(y)
+        self.hasFace.emit(gotFace)     
+        self.facex.emit(x)
+        self.facey.emit(y)
        
-        self.pitch.emit(self.SM.getPitch())
-        self.yaw.emit(self.SM.getYaw())
-
-
         self.update()
 
     def detect(self,frame):
@@ -180,18 +164,22 @@ class faceWidget(QtGui.QWidget):
                                      min_neighbors=2, flags=cv.CV_HAAR_DO_CANNY_PRUNING)
        
             
-    def closeEvent(self,event):
-        self.runSM.clear()
-        
+
 
 
 class mainwindow(QtGui.QMainWindow):
     def __init__(self):
         super(mainwindow, self).__init__()
-        self.initUI()        
+       
+        
+        self.runSM = threading.Event()
+        self.handshakedone=threading.Event()
+        self.SM = StateMachine.stateMachine(self.runSM,self.handshakedone)  
+        self.SM.daemon = True    
+        
+        self.initUI() 
         
     def initUI(self):               
-    
         exitAction = QtGui.QAction(QtGui.QIcon('exit24.png'), 'Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
@@ -230,18 +218,24 @@ class mainwindow(QtGui.QMainWindow):
         self.setCentralWidget(frame)
         vid.facex.connect(xlcd.display)
         vid.facey.connect(ylcd.display)
-        vid.pitch.connect(pitchlcd.display)
-        vid.yaw.connect(yawlcd.display)
-        vid.status.connect(modebox.setText)
-
+        self.SM.pitchsig.connect(pitchlcd.display)
+        self.SM.yawsig.connect(yawlcd.display)
+        self.SM.status.connect(modebox.setText)
         
-
+        self.connect(vid,QtCore.SIGNAL('facex(int)'),self.SM.setXerr)
+        self.connect(vid,QtCore.SIGNAL('facey(int)'),self.SM.setYerr)
+        self.connect(vid,QtCore.SIGNAL('hasFace(bool)'),self.SM.setHasFace)
+        
+        self.runSM.set()
+        self.SM.start()
+        self.handshakedone.wait()
 
         self.setWindowTitle('1d tracker')
         
         self.show()
 
-    
+    def closeEvent(self,event):
+        self.runSM.clear()
 
 
 def main():

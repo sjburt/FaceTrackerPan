@@ -9,6 +9,7 @@ import time
 import PyBasicComms
 import PIDff
 import threading
+from PyQt4 import QtCore
 
 
 YAW_MIN = 50
@@ -104,10 +105,12 @@ class Servo:
 
 
 
-class stateMachine(threading.Thread):
-
+class stateMachine(QtCore.QThread):
+    pitchsig= QtCore.pyqtSignal(int)    
+    yawsig = QtCore.pyqtSignal(int)
+    status =  QtCore.pyqtSignal(str)
     def __init__(self,runSM,handshakedone):
-        threading.Thread.__init__(self)
+        QtCore.QThread.__init__(self)
         self.servo = Servo();
         self.pidx = PIDff.PIDff(.11,.01,.001,6,1)
         self.pidy = PIDff.PIDff(.11,.01,.001,6,1)
@@ -120,10 +123,10 @@ class stateMachine(threading.Thread):
         self.erry = 0;
         self.errx_last = 0;
         self.erry_last = 0;
-        self.acquired = False
+        self.hasFace = False
         self.servo.setyaw(self.yaw)
         self.servo.setpitch(self.pitch)
-        
+
         self.state = StateEnum('Init')
         
     def run(self):
@@ -135,7 +138,7 @@ class stateMachine(threading.Thread):
             if self.state == StateEnum('Init'):
                 event = EventEnum('done_init')
             elif self.state == StateEnum('WaitLong'):
-                if self.acquired:
+                if self.hasFace:
                     event = EventEnum('Acquired')
                 if self.timer[0]:
                     if self.timer[1] < time.time():
@@ -143,7 +146,7 @@ class stateMachine(threading.Thread):
                 else:
                     RuntimeError
             elif self.state == StateEnum('Acquired'):
-                if self.acquired:
+                if self.hasFace:
                     cx = self.pidx.update(self.errx)
                     self.yaw = self.yaw - cx
                     self.servo.setyaw(self.yaw)
@@ -165,7 +168,7 @@ class stateMachine(threading.Thread):
                 self.pitch = self.pitch - cy
                 self.servo.setpitch(self.pitch)
                 cy=cy/2
-                if self.acquired:
+                if self.hasFace:
                     event = EventEnum('Acquired')
                 if self.timer[0]:
                     if self.timer[1] < time.time():
@@ -173,7 +176,7 @@ class stateMachine(threading.Thread):
                 else:
                     RuntimeError
             elif self.state == StateEnum('ScanL'):
-                if self.acquired:
+                if self.hasFace:
                     event = EventEnum('Acquired')
                 else:
                     self.yaw = self.yaw -SEARCH_STEP
@@ -182,7 +185,7 @@ class stateMachine(threading.Thread):
                     if self.yaw < YAW_MIN:
                         event = EventEnum('AtLExtent')
             elif self.state == StateEnum('ScanR'):
-                if self.acquired:
+                if self.hasFace:
                     event = EventEnum('Acquired')
                 else:
                     self.yaw = self.yaw + SEARCH_STEP;
@@ -198,7 +201,9 @@ class stateMachine(threading.Thread):
             if newstate != StateEnum('no_change'):               
                self.state = self.enterState(newstate)
             event = EventEnum('none')
-            
+            self.pitchsig.emit(self.pitch)
+            self.yawsig.emit(self.yaw)   
+            self.status.emit(str(self.state))
             time.sleep(.05)
         
     def handleEvent(self,event):
@@ -285,13 +290,20 @@ class stateMachine(threading.Thread):
             return self.state  # do not switch state
     
     def setStatus(self,acq,errx,erry):
-        self.acquired = acq
+        self.hasFace = acq
         self.errx = errx
         self.erry = erry
 
+    def setXerr(self,errx):
+        self.errx = errx    
+    def setYerr(self,erry):
+        self.erry = erry
+        
+    def setHasFace(self,hasFace):
+        self.hasFace=hasFace
+
     def getState(self):
         return self.state
-        
     def getPitch(self):
         return self.pitch
     def getYaw(self):
