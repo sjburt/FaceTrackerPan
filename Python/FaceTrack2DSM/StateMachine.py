@@ -91,6 +91,7 @@ class Servo:
             pos = YAW_MIN
         self.yaw = pos
         self.p.setyaw(pos) 
+        print pos
 
     def setpitch(self,pos):
         if pos > PITCH_MAX:
@@ -99,7 +100,7 @@ class Servo:
             pos = PITCH_MIN
         self.pitch = pos
         self.p.setpitch(pos) 
-
+        print pos
 
 
 
@@ -130,7 +131,7 @@ class stateMachine(threading.Thread):
         cx=0
         cy=0
         while(self.runSM.isSet()):
-            #print (str(self.state),self.acquired,self.errx,self.errx_last)
+            print self.errx,cx,self.erry,cy
             if self.state == StateEnum('Init'):
                 event = EventEnum('done_init')
             elif self.state == StateEnum('WaitLong'):
@@ -151,6 +152,7 @@ class stateMachine(threading.Thread):
                     self.pitch = self.pitch - cy
                     self.servo.setpitch(self.pitch)
                     self.erry_last = self.erry
+                    
                 else:
                     if self.errx_last <= 0:
                         event=EventEnum('LostL')
