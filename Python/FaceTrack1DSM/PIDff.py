@@ -10,7 +10,7 @@ Created on Fri Mar 01 14:19:04 2013
 
 class PIDff:
     
-    def __init__(self, P=2.0, I=0.0, D=1.0, depth=2,errFF=.95, Derivator=0, Integrator=0, Integrator_max=500, Integrator_min=-500):
+    def __init__(self, P=2.0, I=0.0, D=1.0, depth=10,errFF=.75, Derivator=0, Integrator=0, Integrator_max=500, Integrator_min=-500):
 
         self.Kp=P
         self.Ki=I
@@ -96,3 +96,11 @@ class PIDff:
     def getDerivator(self):
         return self.Derivator
         
+    def reset(self):
+        self.Integrator = 0;
+        self.depthbuffer = list()
+        for i in range(self.depth):
+            self.depthbuffer.append(0)
+            
+        self.set_point=0.0
+        self.error=0.0

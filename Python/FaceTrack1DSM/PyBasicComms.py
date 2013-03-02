@@ -65,10 +65,9 @@ class SerThread(threading.Thread):
 
             if data == "p":
                 packet=dirty('p'+chr((int(self.yaw)>>8))+chr(self.yaw%256))
-            else:
-                if data == "o":
-                    packet=dirty('o'+chr((int(self.pitch)>>8))+chr(self.pitch%256))
-                    
+            elif data == "o":
+                packet=dirty('o'+chr((int(self.pitch)>>8))+chr(self.pitch%256))
+                   
             self.ser.write(packet)
                
     def updateyaw(self,newyaw):
@@ -91,12 +90,13 @@ class SerThread(threading.Thread):
 
 class PyBasicComms:
     yaw   = 512 
-    pitch = 350 
+    pitch = 400 
     def __init__(self,portname):
         self.flag = threading.Event()
         self.sthread=SerThread(self.flag,portname)
         self.sthread.updateyaw(self.yaw)
         self.sthread.updatepitch(self.pitch)
+        self.sthread.daemon=True
     def handshake(self):
 
         self.sthread.handshake()
@@ -108,19 +108,19 @@ class PyBasicComms:
         self.yaw = yaw
         self.sthread.updateyaw(self.yaw)
     def moveCW(self):
-        self.yaw = self.yaw+5
+        self.yaw = self.yaw+25
         self.sthread.updateyaw(self.yaw)
     def moveCCW(self):
-        self.yaw = self.yaw -5
+        self.yaw = self.yaw -25
         self.sthread.updateyaw(self.yaw)
     def setpitch(self,pitch):
         self.pitch = pitch
         self.sthread.updatepitch(self.pitch)
     def moveUp(self):
-        self.pitch = self.pitch-5
+        self.pitch = self.pitch-25
         self.sthread.updatepitch(self.pitch)
     def moveDown(self):
-        self.pitch = self.pitch +5
+        self.pitch = self.pitch +25
         self.sthread.updatepitch(self.pitch)
         
     def stop(self):

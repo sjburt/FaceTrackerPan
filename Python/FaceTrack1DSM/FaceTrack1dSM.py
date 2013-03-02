@@ -11,270 +11,16 @@ import sys
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 
-import PyBasicComms
-import time
-
-import PIDff
-
+import StateMachine
+import threading
 SEARCH_STEP = 2
 POSMIN = 0
 POSMAX = 1024
 YAW_GOAL = 320
 PITCH_GOAL = 240
-    
-    
-class enumState():
-    """ Possible states for state machine"""
-    init = 0
-    WaitLong = 1
-    Acquired = 2
-    LSearch  = 3
-    RSearch  = 4
-    WaitL = 5
-    WaitR = 6
-    Handshaking = 7
-    
-    
-    def __init__(self, Type):
-        self.value = Type
-    def __str__(self):
-        if self.value == enumState.init:
-            return 'init' 
-        if self.value == enumState.WaitLong:
-            return 'WaitLong'
-        if self.value == enumState.Acquired:
-            return 'Acquired'
-        if self.value == enumState.LSearch:
-            return 'Lsearch' 
-        if self.value == enumState.RSearch:
-            return 'Rsearch'
-        if self.value == enumState.WaitL:
-            return 'WaitL'
-        if self.value == enumState.WaitR:
-            return 'WaitL'
-        if self.value == enumState.Handshaking:
-            return 'Handshaking'
-    def __eq__(self,y):
-        return self.value==y.value     
-
-class enumEvent():
-    none = 0
-    doHandshake = 1
-    Acquired = 2
-    TimerDone = 3
-    LostLeft = 4
-    LostRight = 5
-    AtLExtent= 6
-    AtRExtent=7
-    Handshook=8
-    
-    def __init__(self, Type):
-        self.value = Type
-        
-    def __str__(self):
-        if self.value == enumEvent.none:
-            return 'none'
-        if self.value == enumEvent.doHandshake:
-            return 'doHandshake'
-        if self.value == enumEvent.TimerDone:
-            return 'timerDone'
-        if self.value == enumEvent.LostLeft:
-            return 'lostLeft'
-        if self.value == enumEvent.LostRight:
-            return 'lostRight'
-        if self.value == enumEvent.AtLExtent:
-            return 'atLExtent'
-        if self.value == enumEvent.AtRExtent:
-            return 'atRExtent'
-        if self.value == enumEvent.Handshook:
-            return 'Handshook'
-    def __eq__(self,y):
-        return self.value==y.value  
 
 
 
-class Servo:
-    def __init__(self):    
-        ## todo
-        try:        
-            from serial.serialutil import SerialException
-            self.p = PyBasicComms.PyBasicComms("COM3")
-        except (SerialException):
-            print "Com3 not working"
-            
-            q = raw_input("asdfaf")            
-            
-        self.pos =512 
-        time.sleep(.1)
-
-        
-    def handshake(self):
-        self.p.handshake()
-
-    def setpos(self,pos):
-        if pos > 1024:
-            pos = 1024
-        if pos < 0:
-            pos = 0
-        
-        self.pos = pos
-        self.p.setyaw(pos) 
-            
-
-    
-class stateMachine:
-    
-
-    def __init__(self):
-       
-        self.servo=Servo()
-        self.state = enumState(enumState.init)
-        self.control = PIDff.PIDff(.05,.01,.01)
-        self.control.setPoint(0)
-        self.lastxerr = 0;
-        self.pos = 512;
-        self.timer = (False,0)
-        self.servo.handshake()
-
-    def handleEvent(self, event):
-        if self.state == enumState(enumState.init):
-                return enumState(enumState.WaitLong)
-                
-        if self.state == enumState(enumState.WaitLong):
-            if event == enumEvent(enumEvent.Acquired):
-                return enumState(enumState.Acquired)
-            if event == enumEvent(enumEvent.TimerDone):
-                return enumState(enumState.LSearch)
-                
-        if self.state == enumState(enumState.Acquired):
-            if event == enumEvent(enumEvent.LostLeft):
-                return enumState(enumState.WaitL)
-            if event == enumEvent(enumEvent.LostRight):
-                return enumState(enumState.WaitR)
-        
-        if self.state == enumState(enumState.LSearch):
-            if event == enumEvent(enumEvent.Acquired):
-                return enumState(enumState.Acquired)
-            if event == enumEvent(enumEvent.AtLExtent):
-                return enumState(enumState.RSearch)
-                    
-        if self.state == enumState(enumState.RSearch):
-            if event == enumEvent(enumEvent.Acquired):
-                return enumState(enumState.Acquired)
-            if event == enumState(enumEvent.AtRExtent):
-                return enumState(enumState.LSearch)
-
-        if self.state == enumState(enumState.WaitL):
-            if event == enumEvent(enumEvent.Acquired):
-                return enumState(enumState.Acquired)
-            if event == enumState(enumEvent.TimerDone):
-                return enumState(enumState.LSearch)
-        
-        if self.state == enumState(enumState.WaitR):
-            if event == enumEvent(enumEvent.Acquired):
-                return enumState(enumState.Acquired)
-            if event == enumEvent(enumEvent.TimerDone):
-                return enumState(enumState.RSearch)
-      
-        return self.state
-
-
-    def enterState(self,newstate):
-        
-        
-        if newstate == enumState(enumState.WaitLong):
-            self.state = enumState(enumState.WaitLong)
-            self.timer = (True,time.time() + 5)
-            
-        if newstate == enumState(enumState.Acquired):
-            self.state = enumState(enumState.Acquired)
-            self.control.__init__();
-            self.timer = (False,False)
-        
-        if newstate == enumState(enumState.LSearch):
-            self.state = enumState(enumState.LSearch)
-            self.timer = (False,False)
-                
-        if newstate == enumState(enumState.RSearch):
-            self.state = enumState(enumState.RSearch)
-            self.timer = (False,False)
-                
-        if newstate == enumState(enumState.WaitL):
-            self.state = enumState(enumState.WaitL)
-            self.timer = (True,time.time()+.5)
-
-        if newstate == enumState(enumState.WaitR):
-            self.state = enumState(enumState.WaitR)
-            self.timer = (True,time.time()+.5)
-                
-
-    def step(self,status):
-        event = enumEvent(enumEvent.none)
-        
-        if self.state == enumState(enumState.init):
-            self.timer = (False,0)
-            self.pos = 512
-            event = enumEvent(enumEvent.Handshook)
-            
-        if self.state == enumState(enumState.WaitLong):
-            print self.timer
-            if status[0]:
-                event = enumEvent(enumEvent.Acquired)
-            elif self.timer[0] and (time.time() > self.timer[1]):
-                event = enumEvent(enumEvent.TimerDone)
-            elif (not self.timer[0]):
-                    raise SMError("inWaitlong,but no timer")
-        
-        if self.state==enumState(enumState.Acquired):
-            if status[0]:            
-                ci = self.control.update(status[1])
-                self.servo.setpos(self.pos-ci)
-                print str(ci) + " " + str(self.pos)
-                self.lastxerr = status[1]
-            else:
-                if self.lastxerr > 0:
-                    event = enumEvent(enumEvent.LostLeft)
-                else:
-                    event = enumEvent(enumEvent.LostRight)
-
-        if self.state==enumState(enumState.WaitL):
-            if status[0]:
-                event = enumEvent(enumEvent.Acquired)
-            else:
-                if self.timer[0] and (time.time() > self.timer[1]):
-                    event = enumEvent(enumEvent.TimerDone)
-                if not self.timer[0]:
-                    raise StandardError
-        
-        if self.state==enumState(enumState.WaitR):
-            if status[0]:
-                event = enumEvent(enumEvent.Acquired)
-            else:
-                if self.timer[0] and (time.time() > self.timer[1]):
-                    event = enumEvent(enumEvent.TimerDone)
-                if not self.timer[0]:
-                     raise StandardError    
-        
-        if self.state==enumState(enumState.LSearch):
-            if status[0]:
-                event = enumEvent(enumEvent.Acquired)
-            self.pos = self.pos - SEARCH_STEP
-            self.servo.setpos(self.pos)
-            if self.pos < POSMIN:
-                event = enumEvent(enumEvent.AtLExtent)
-        
-        if self.state==enumState(enumState.RSearch):
-            if status[0]:
-                event = enumEvent(enumEvent.Acquired)
-            self.pos = self.pos + SEARCH_STEP
-            self.servo.setpos(self.pos)
-            if self.pos > POSMIN:
-                event = enumEvent(enumEvent.AtRExtent)
-            
-        self.state = self.handleEvent(event)
-            
-        return self.state
-      
       
     
 class IplQImage(QtGui.QImage):
@@ -306,7 +52,9 @@ class faceWidget(QtGui.QWidget):
     facey = QtCore.pyqtSignal(int)
     status= QtCore.pyqtSignal(str)
     def __init__(self, parent=None):
-        self.j = stateMachine()        
+        self.runSM = threading.Event()
+        self.handshakedone=threading.Event()
+        self.SM = StateMachine.stateMachine(self.runSM,self.handshakedone)        
         QtGui.QWidget.__init__(self)
         self._capture = cv.CreateCameraCapture(0)
         
@@ -342,6 +90,9 @@ class faceWidget(QtGui.QWidget):
         # Paint every 50 ms
         self._timer = QtCore.QTimer(self)
         self._timer.timeout.connect(self.queryFrame)
+        self.runSM.set()
+        self.SM.start()
+        self.handshakedone.wait()
         self._timer.start(100)
         
 
@@ -356,9 +107,9 @@ class faceWidget(QtGui.QWidget):
             cv.Flip(frame, self._frame, 0)
 
         
-        if self.faces:
-            for (x,y,w,h),n in self.faces:
-                cv.Rectangle(self._frame, (x*self.xscale,y*self.yscale),((x+w)*self.xscale,(y+h)*self.yscale),(128,255,128),2)
+       # if self.faces:
+       #     for (x,y,w,h),n in self.faces:
+       #         cv.Rectangle(self._frame, (x*self.xscale,y*self.yscale),((x+w)*self.xscale,(y+h)*self.yscale),(128,255,128),2)
         if self.bestface:
             (x,y,w,h),n = self.bestface
             cv.Rectangle(self._frame, (x*self.xscale,y*self.yscale),((x+w)*self.xscale,(y+h)*self.yscale),(255,255,128),2)
@@ -391,14 +142,17 @@ class faceWidget(QtGui.QWidget):
             x = pos[0]*self.xscale+pos[2]*self.xscale/2 - YAW_GOAL 
             y = pos[1]*self.xscale+pos[3]*self.xscale/2 - PITCH_GOAL
             gotFace = True
+        self.SM.setStatus(gotFace,x,y)
+            
 
-        state = self.j.step((gotFace,x,y))
+        state =self.SM.getState()
         
-        print str(state)
+        
+        #print "step return: " + str(state)
         self.status.emit(str(state))
         self.facex.emit(x)
         self.facey.emit(y)
-        
+
         
         self.update()
 
