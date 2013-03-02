@@ -9,3 +9,7 @@ FTServoComms/FTServoComms/Debug/*
 TestCode/Debug/*
 TestCode/ipch/*
 TestCode/TestCode/Debug/*
+
+*.pyc
+
+*.pyc
