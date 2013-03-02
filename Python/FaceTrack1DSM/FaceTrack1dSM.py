@@ -14,93 +14,83 @@ from PyQt4 import QtCore
 import PyBasicComms
 import time
 
-class PID:
+import PIDff
+
+SEARCH_STEP = 2
+POSMIN = 0
+POSMAX = 1024
+YAW_GOAL = 320
+PITCH_GOAL = 240
     
-    def __init__(self, P=2.0, I=0.0, D=1.0, depth=2,errFF=.95, Derivator=0, Integrator=0, Integrator_max=500, Integrator_min=-500):
-
-        self.Kp=P
-        self.Ki=I
-        self.Kd=D
-        self.Derivator=Derivator
-        self.Integrator=Integrator
-        self.Integrator_max=Integrator_max
-        self.Integrator_min=Integrator_min
-
-        self.kerrFF = depth
-        self.depth = errFF
-        self.depthbuffer = list()
-        for i in range(self.depth):
-            self.depthbuffer.append(0)
-            
-        self.set_point=0.0
-        self.error=0.0
-
-    def update(self,current_value):
-        """
-        Calculate PID output value for given reference input and feedback
-        """
-
-        self.error = self.set_point - current_value
-
-        self.P_value = self.Kp * self.error
-        self.D_value = self.Kd * ( self.error - self.Derivator)
-        self.Derivator = self.error
-
-        self.Integrator = self.Integrator + self.error
-
-        if self.Integrator > self.Integrator_max:
-            self.Integrator = self.Integrator_max
-        elif self.Integrator < self.Integrator_min:
-            self.Integrator = self.Integrator_min
-
-        self.I_value = self.Integrator * self.Ki
-        
-        FF_val = self.kerrFF * sum(self.depthbuffer) / self.depth       
-        
-        PID = self.P_value + self.I_value + self.D_value - FF_val
-        
-        self.depthbuffer.pop(0)
-        self.depthbuffer.append(PID)
-
-        return PID
-
-    def setPoint(self,set_point):
-        """
-        Initilize the setpoint of PID
-        """
-        self.set_point = set_point
-        self.Integrator=0
-        self.Derivator=0
-
-    def setIntegrator(self, Integrator):
-        self.Integrator = Integrator
-
-    def setDerivator(self, Derivator):
-        self.Derivator = Derivator
-
-    def setKp(self,P):
-        self.Kp=P
-
-    def setKi(self,I):
-        self.Ki=I
-
-    def setKd(self,D):
-        self.Kd=D
-
-    def setKerFF(self,erff):
-        self.KerFF=erff
     
-    def getPoint(self):
-        return self.set_point
+class enumState():
+    """ Possible states for state machine"""
+    init = 0
+    WaitLong = 1
+    Acquired = 2
+    LSearch  = 3
+    RSearch  = 4
+    WaitL = 5
+    WaitR = 6
+    Handshaking = 7
+    
+    
+    def __init__(self, Type):
+        self.value = Type
+    def __str__(self):
+        if self.value == enumState.init:
+            return 'init' 
+        if self.value == enumState.WaitLong:
+            return 'WaitLong'
+        if self.value == enumState.Acquired:
+            return 'Acquired'
+        if self.value == enumState.LSearch:
+            return 'Lsearch' 
+        if self.value == enumState.RSearch:
+            return 'Rsearch'
+        if self.value == enumState.WaitL:
+            return 'WaitL'
+        if self.value == enumState.WaitR:
+            return 'WaitL'
+        if self.value == enumState.Handshaking:
+            return 'Handshaking'
+    def __eq__(self,y):
+        return self.value==y.value     
 
-    def getError(self):
-        return self.error
+class enumEvent():
+    none = 0
+    doHandshake = 1
+    Acquired = 2
+    TimerDone = 3
+    LostLeft = 4
+    LostRight = 5
+    AtLExtent= 6
+    AtRExtent=7
+    Handshook=8
+    
+    def __init__(self, Type):
+        self.value = Type
+        
+    def __str__(self):
+        if self.value == enumEvent.none:
+            return 'none'
+        if self.value == enumEvent.doHandshake:
+            return 'doHandshake'
+        if self.value == enumEvent.TimerDone:
+            return 'timerDone'
+        if self.value == enumEvent.LostLeft:
+            return 'lostLeft'
+        if self.value == enumEvent.LostRight:
+            return 'lostRight'
+        if self.value == enumEvent.AtLExtent:
+            return 'atLExtent'
+        if self.value == enumEvent.AtRExtent:
+            return 'atRExtent'
+        if self.value == enumEvent.Handshook:
+            return 'Handshook'
+    def __eq__(self,y):
+        return self.value==y.value  
 
-    def getIntegrator(self):
-        return self.Integrator
-
-    def getDerivator(self):
-        return self.Derivator
 
 
 class Servo:
@@ -111,11 +101,12 @@ class Servo:
             self.p = PyBasicComms.PyBasicComms("COM3")
         except (SerialException):
             print "Com3 not working"
-            sys.exit(-1)
-        self.setpos(512)
+            
+            q = raw_input("asdfaf")            
+            
+        self.pos =512 
         time.sleep(.1)
-        self.control = PID(.1,0.01,0.01)
-        self.control.setPoint(320)
+
         
     def handshake(self):
         self.p.handshake()
@@ -126,17 +117,165 @@ class Servo:
         if pos < 0:
             pos = 0
         
-        
         self.pos = pos
         self.p.setyaw(pos) 
             
-    def scnloc(self,loc):
-         ci = self.control.update(loc)
-         
-         self.setpos(self.pos-ci)
-         print str(ci) + " " + str(self.pos)
+
     
+class stateMachine:
     
+
+    def __init__(self):
+       
+        self.servo=Servo()
+        self.state = enumState(enumState.init)
+        self.control = PIDff.PIDff(.05,.01,.01)
+        self.control.setPoint(0)
+        self.lastxerr = 0;
+        self.pos = 512;
+        self.timer = (False,0)
+        self.servo.handshake()
+
+    def handleEvent(self, event):
+        if self.state == enumState(enumState.init):
+                return enumState(enumState.WaitLong)
+                
+        if self.state == enumState(enumState.WaitLong):
+            if event == enumEvent(enumEvent.Acquired):
+                return enumState(enumState.Acquired)
+            if event == enumEvent(enumEvent.TimerDone):
+                return enumState(enumState.LSearch)
+                
+        if self.state == enumState(enumState.Acquired):
+            if event == enumEvent(enumEvent.LostLeft):
+                return enumState(enumState.WaitL)
+            if event == enumEvent(enumEvent.LostRight):
+                return enumState(enumState.WaitR)
+        
+        if self.state == enumState(enumState.LSearch):
+            if event == enumEvent(enumEvent.Acquired):
+                return enumState(enumState.Acquired)
+            if event == enumEvent(enumEvent.AtLExtent):
+                return enumState(enumState.RSearch)
+                    
+        if self.state == enumState(enumState.RSearch):
+            if event == enumEvent(enumEvent.Acquired):
+                return enumState(enumState.Acquired)
+            if event == enumState(enumEvent.AtRExtent):
+                return enumState(enumState.LSearch)
+
+        if self.state == enumState(enumState.WaitL):
+            if event == enumEvent(enumEvent.Acquired):
+                return enumState(enumState.Acquired)
+            if event == enumState(enumEvent.TimerDone):
+                return enumState(enumState.LSearch)
+        
+        if self.state == enumState(enumState.WaitR):
+            if event == enumEvent(enumEvent.Acquired):
+                return enumState(enumState.Acquired)
+            if event == enumEvent(enumEvent.TimerDone):
+                return enumState(enumState.RSearch)
+      
+        return self.state
+
+
+    def enterState(self,newstate):
+        
+        
+        if newstate == enumState(enumState.WaitLong):
+            self.state = enumState(enumState.WaitLong)
+            self.timer = (True,time.time() + 5)
+            
+        if newstate == enumState(enumState.Acquired):
+            self.state = enumState(enumState.Acquired)
+            self.control.__init__();
+            self.timer = (False,False)
+        
+        if newstate == enumState(enumState.LSearch):
+            self.state = enumState(enumState.LSearch)
+            self.timer = (False,False)
+                
+        if newstate == enumState(enumState.RSearch):
+            self.state = enumState(enumState.RSearch)
+            self.timer = (False,False)
+                
+        if newstate == enumState(enumState.WaitL):
+            self.state = enumState(enumState.WaitL)
+            self.timer = (True,time.time()+.5)
+
+        if newstate == enumState(enumState.WaitR):
+            self.state = enumState(enumState.WaitR)
+            self.timer = (True,time.time()+.5)
+                
+
+    def step(self,status):
+        event = enumEvent(enumEvent.none)
+        
+        if self.state == enumState(enumState.init):
+            self.timer = (False,0)
+            self.pos = 512
+            event = enumEvent(enumEvent.Handshook)
+            
+        if self.state == enumState(enumState.WaitLong):
+            print self.timer
+            if status[0]:
+                event = enumEvent(enumEvent.Acquired)
+            elif self.timer[0] and (time.time() > self.timer[1]):
+                event = enumEvent(enumEvent.TimerDone)
+            elif (not self.timer[0]):
+                    raise SMError("inWaitlong,but no timer")
+        
+        if self.state==enumState(enumState.Acquired):
+            if status[0]:            
+                ci = self.control.update(status[1])
+                self.servo.setpos(self.pos-ci)
+                print str(ci) + " " + str(self.pos)
+                self.lastxerr = status[1]
+            else:
+                if self.lastxerr > 0:
+                    event = enumEvent(enumEvent.LostLeft)
+                else:
+                    event = enumEvent(enumEvent.LostRight)
+
+        if self.state==enumState(enumState.WaitL):
+            if status[0]:
+                event = enumEvent(enumEvent.Acquired)
+            else:
+                if self.timer[0] and (time.time() > self.timer[1]):
+                    event = enumEvent(enumEvent.TimerDone)
+                if not self.timer[0]:
+                    raise StandardError
+        
+        if self.state==enumState(enumState.WaitR):
+            if status[0]:
+                event = enumEvent(enumEvent.Acquired)
+            else:
+                if self.timer[0] and (time.time() > self.timer[1]):
+                    event = enumEvent(enumEvent.TimerDone)
+                if not self.timer[0]:
+                     raise StandardError    
+        
+        if self.state==enumState(enumState.LSearch):
+            if status[0]:
+                event = enumEvent(enumEvent.Acquired)
+            self.pos = self.pos - SEARCH_STEP
+            self.servo.setpos(self.pos)
+            if self.pos < POSMIN:
+                event = enumEvent(enumEvent.AtLExtent)
+        
+        if self.state==enumState(enumState.RSearch):
+            if status[0]:
+                event = enumEvent(enumEvent.Acquired)
+            self.pos = self.pos + SEARCH_STEP
+            self.servo.setpos(self.pos)
+            if self.pos > POSMIN:
+                event = enumEvent(enumEvent.AtRExtent)
+            
+        self.state = self.handleEvent(event)
+            
+        return self.state
+      
+      
     
 class IplQImage(QtGui.QImage):
     """
@@ -164,9 +303,10 @@ class IplQImage(QtGui.QImage):
 class faceWidget(QtGui.QWidget):
     
     facex = QtCore.pyqtSignal(int)    
-    
+    facey = QtCore.pyqtSignal(int)
+    status= QtCore.pyqtSignal(str)
     def __init__(self, parent=None):
-        
+        self.j = stateMachine()        
         QtGui.QWidget.__init__(self)
         self._capture = cv.CreateCameraCapture(0)
         
@@ -234,6 +374,32 @@ class faceWidget(QtGui.QWidget):
         
         self.detect(frame)
         self._image = self._build_image(frame)
+        
+        bestn = 0                             
+        if self.faces:
+            for pos,n in self.faces:
+                if n > bestn:
+                    self.bestface = (pos,n)
+                    bestn = n
+        if bestn == 0:
+            self.bestface = None
+            x=0
+            y=0
+            gotFace = False
+        if self.bestface:
+            pos = self.bestface[0]
+            x = pos[0]*self.xscale+pos[2]*self.xscale/2 - YAW_GOAL 
+            y = pos[1]*self.xscale+pos[3]*self.xscale/2 - PITCH_GOAL
+            gotFace = True
+
+        state = self.j.step((gotFace,x,y))
+        
+        print str(state)
+        self.status.emit(str(state))
+        self.facex.emit(x)
+        self.facey.emit(y)
+        
+        
         self.update()
 
     def detect(self,frame):
@@ -246,17 +412,7 @@ class faceWidget(QtGui.QWidget):
         # detect objects
         self.faces = cv.HaarDetectObjects(image=self.smallgray, cascade=self.cascade, storage=self.storage, scale_factor=1.2,\
                                      min_neighbors=2, flags=cv.CV_HAAR_DO_CANNY_PRUNING)
-        bestn = 0                             
-        if self.faces:
-            for pos,n in self.faces:
-                if n > bestn:
-                    self.bestface = (pos,n)
-                    bestn = n
-        if bestn == 0:
-            self.bestface = None
-        if self.bestface:
-            pos = self.bestface[0]
-            self.facex.emit(pos[0]*self.xscale+pos[3]*self.xscale/2)
+       
             
 
 
@@ -264,38 +420,44 @@ class faceWidget(QtGui.QWidget):
 class mainwindow(QtGui.QMainWindow):
     def __init__(self):
         super(mainwindow, self).__init__()
-
-        self.j = Servo()        
-        
         self.initUI()        
         
     def initUI(self):               
-        
-        self.j.handshake()
+    
         exitAction = QtGui.QAction(QtGui.QIcon('exit24.png'), 'Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(self.close)
         vid = faceWidget(self)
-        lcd = QtGui.QLCDNumber(self)
-
+        xlcd = QtGui.QLCDNumber(self)
+        ylcd = QtGui.QLCDNumber(self)
+        statusbox = QtGui.QLabel(self)     
+        
         frame = QtGui.QFrame()
         frame.setFrameShape(QtGui.QFrame.StyledPanel)
         vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(vid)        
-        vbox.addWidget(lcd)
-
+        vbox.addWidget(vid)
+        lowerframe = QtGui.QFrame()          
+        vbox.addWidget(lowerframe)
         frame.setLayout(vbox)
-            
+    
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(statusbox)        
+        hbox.addWidget(xlcd)
+        hbox.addWidget(ylcd)
+        lowerframe.setLayout(hbox)
+        
         self.setCentralWidget(frame)
-
-        vid.facex.connect(lcd.display)
-        self.connect(vid,QtCore.SIGNAL('facex(int)'),self.j.scnloc)
+        vid.facex.connect(xlcd.value)
+        vid.facey.connect(ylcd.value)
+        vid.status.connect(statusbox.text)
 
         self.setWindowTitle('1d tracker')
         
-        
         self.show()
+
+
+
 
 def main():
     app = QtGui.QApplication(sys.argv)
