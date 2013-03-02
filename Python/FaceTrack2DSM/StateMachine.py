@@ -72,7 +72,7 @@ class Servo:
         ## todo
         try:        
             from serial.serialutil import SerialException
-            self.p = PyBasicComms.PyBasicComms("COM3")
+            self.p = PyBasicComms.PyBasicComms("/dev/tty.usbmodemfd121")
         except (SerialException):
             print "Com3 not working"
           
