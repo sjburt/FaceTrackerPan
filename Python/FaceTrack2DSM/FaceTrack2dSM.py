@@ -13,9 +13,8 @@ from PyQt4 import QtCore
 
 import StateMachine
 import threading
-SEARCH_STEP = 2
-POSMIN = 0
-POSMAX = 1024
+import time
+
 YAW_GOAL = 320
 PITCH_GOAL = 240
 
@@ -50,6 +49,8 @@ class faceWidget(QtGui.QWidget):
     
     facex = QtCore.pyqtSignal(int)    
     facey = QtCore.pyqtSignal(int)
+    pitch= QtCore.pyqtSignal(int)    
+    yaw = QtCore.pyqtSignal(int)
     status= QtCore.pyqtSignal(str)
     def __init__(self, parent=None):
         self.runSM = threading.Event()
@@ -57,7 +58,7 @@ class faceWidget(QtGui.QWidget):
         self.SM = StateMachine.stateMachine(self.runSM,self.handshakedone)        
         QtGui.QWidget.__init__(self)
         self._capture = cv.CreateCameraCapture(0)
-        
+        self.time = time.time()
         if not self._capture:
             print "Error opening capture device"
             sys.exit(1)
@@ -78,7 +79,7 @@ class faceWidget(QtGui.QWidget):
  
 #         create grayscale version
         self.grayscale = cv.CreateImage(self.image_size, 8, 1)
-        self.smallgray = cv.CreateImage((100,75),8,1)
+        self.smallgray = cv.CreateImage((160,120),8,1)
         
         self.xscale = frame.width/self.smallgray.width
         self.yscale = frame.height/self.smallgray.height
@@ -95,7 +96,7 @@ class faceWidget(QtGui.QWidget):
         self.runSM.set()
         self.SM.start()
         self.handshakedone.wait()
-        self._timer.start(100)
+        self._timer.start(50)
         
 
     
@@ -109,13 +110,15 @@ class faceWidget(QtGui.QWidget):
             cv.Flip(frame, self._frame, 0)
 
         
-       # if self.faces:
-       #     for (x,y,w,h),n in self.faces:
-       #         cv.Rectangle(self._frame, (x*self.xscale,y*self.yscale),((x+w)*self.xscale,(y+h)*self.yscale),(128,255,128),2)
+    #    if self.faces:
+       #    for (x,y,w,h),n in self.faces:
+      #          cv.Rectangle(self._frame, (x*self.xscale,y*self.yscale),((x+w)*self.xscale,(y+h)*self.yscale),(128,255,128),2)
+     #           cv.Circle(self._frame, (int((x+int(w/2)) * self.xscale),int((y+int(h/2)) * self.yscale)),5,(255,255,128),2)
+
         if self.bestface:
             (x,y,w,h),n = self.bestface
             cv.Rectangle(self._frame, (x*self.xscale,y*self.yscale),((x+w)*self.xscale,(y+h)*self.yscale),(255,255,128),2)
-
+            cv.Circle(self._frame, (int((x+int(w/2)) * self.xscale),int((y+int(h/2)) * self.yscale)),5,(255,255,128),2)
         return IplQImage(self._frame)
  
     def paintEvent(self, event):
@@ -150,12 +153,16 @@ class faceWidget(QtGui.QWidget):
         state =self.SM.getState()
         
         
-        #print "step return: " + str(state)
-        self.status.emit(str(state))
-        self.facex.emit(x)
-        self.facey.emit(y)
 
-        
+        self.status.emit(str(state))
+        if state==StateMachine.StateEnum('Acquired'):  
+            self.facex.emit(x)
+            self.facey.emit(y)
+       
+        self.pitch.emit(self.SM.getPitch())
+        self.yaw.emit(self.SM.getYaw())
+
+
         self.update()
 
     def detect(self,frame):
@@ -187,26 +194,43 @@ class mainwindow(QtGui.QMainWindow):
         vid = faceWidget(self)
         xlcd = QtGui.QLCDNumber(self)
         ylcd = QtGui.QLCDNumber(self)
-        statusbox = QtGui.QLabel(self)     
+        yawlcd=QtGui.QLCDNumber(self)
+        pitchlcd=QtGui.QLCDNumber(self)
+        modebox = QtGui.QLabel(self)
         
         frame = QtGui.QFrame()
         frame.setFrameShape(QtGui.QFrame.StyledPanel)
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(vid)
-        lowerframe = QtGui.QFrame()          
+        lowerframe = QtGui.QFrame()
+        lowerframe2 = QtGui.QFrame()            
         vbox.addWidget(lowerframe)
+        vbox.addWidget(lowerframe2)
+        vbox.addWidget(modebox)
         frame.setLayout(vbox)
-    
+        
+        lowerframe.setFixedHeight(100)
+        lowerframe2.setFixedHeight(100)
         hbox = QtGui.QHBoxLayout()
-        hbox.addWidget(statusbox)        
         hbox.addWidget(xlcd)
         hbox.addWidget(ylcd)
+
+        hbox2 =QtGui.QHBoxLayout()
+        hbox2.addWidget(yawlcd)
+        hbox2.addWidget(pitchlcd)
+        
+
         lowerframe.setLayout(hbox)
-        
+        lowerframe2.setLayout(hbox2)
         self.setCentralWidget(frame)
-        vid.facex.connect(xlcd.display)
+        vid.facey.connect(xlcd.display)
         vid.facey.connect(ylcd.display)
+        vid.pitch.connect(pitchlcd.display)
+        vid.yaw.connect(yawlcd.display)
+        vid.status.connect(modebox.setText)
+
         
+
 
         self.setWindowTitle('1d tracker')
         
