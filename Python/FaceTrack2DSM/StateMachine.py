@@ -8,7 +8,7 @@ Created on Fri Mar 01 19:14:32 2013
 import time
 import PyBasicComms
 import PIDff
-import threading
+
 from PyQt4 import QtCore
 
 
@@ -73,7 +73,7 @@ class Servo:
         ## todo
         try:        
             from serial.serialutil import SerialException
-            self.p = PyBasicComms.PyBasicComms("/dev/tty.usbmodemfd121")
+            self.p = PyBasicComms.PyBasicComms("/dev/tty.usbmodemfa1331")
         except (SerialException):
             print "Couldn't open port not working"
           
