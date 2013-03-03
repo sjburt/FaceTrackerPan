@@ -67,10 +67,10 @@ class SerThread(threading.Thread):
             data = self.ser.read(1)   
 
             if data == "p":
-                packet=dirty('p'+chr((int(self.yaw)>>8))+chr(self.yaw%256))
+                packet=dirty('p'+'p'+chr((int(self.yaw)>>8))+chr(self.yaw%256))
              
             elif data == "o":
-                packet=dirty('o'+chr((int(self.pitch)>>8))+chr(self.pitch%256))
+                packet=dirty('o'+'o'+chr((int(self.pitch)>>8))+chr(self.pitch%256))
  
             self.ser.write(packet)
               

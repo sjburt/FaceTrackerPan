@@ -1,0 +1,30 @@
+digraph SM {
+	node [shape=box,style=bold, fontname=Helvetica];
+edge[fontname= Helvetica];
+WaitFace[label="Wait for Face"]; 
+TrackFace[label = "Track Face\n \n(Runs control loop)"];
+ScanLeft[label = "Scan Left"];
+ScanRight[label = "Scan Right"];
+	node [shape=ellipse,style=normal]; "Init"[label="Init"];
+WaitLeft[label="Wait Left"]; 
+WaitRight[label="Wait Right"];
+	
+	"Init" -> WaitFace [label="done\n with\n init"];
+	WaitFace -> TrackFace [label="saw face"];
+	WaitFace -> ScanLeft[label="timed out"];
+	TrackFace -> WaitLeft[label="lost face,\n on left side"];
+	TrackFace -> WaitRight[label="lost face,\n on right side"];
+
+	WaitLeft -> ScanLeft[label="1s elapsed"];
+	WaitRight -> ScanRight[label="1s elapsed"];
+
+	ScanRight -> ScanLeft[label="End of Travel"];
+	ScanLeft -> ScanRight[label="End of Travel"];
+
+	WaitLeft -> TrackFace[label="Sees face"];
+	WaitRight -> TrackFace[label="Sees face"];
+
+	ScanRight -> TrackFace[label="Sees face"];
+	ScanLeft -> TrackFace[label="Sees face"];
+
+}

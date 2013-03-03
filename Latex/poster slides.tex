@@ -1,16 +1,105 @@
 % small.tex
 \documentclass{beamer}
-\usetheme{default}
+\usepackage{graphicx,color,setspace,hyperref}                           % Includes packages for the LaTeX document.
+\usepackage[left=1.5in,top=1.25in,bottom=1.25in,right=1.25in]{geometry} % Sets the proper margins.
+ \usepackage{mathptmx}
+\setlength{\parindent}{.5in} % Do not automatically indent the paragraphs.
 
-\title{Easy Face Tracking}
-\subtitle{using OpenCV, Python
+%\usepackage{cite}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{gensymb}
 
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\usepackage{array}
+\usepackage{tabularx}
+\renewcommand{\tabularxcolumn}[1]{p{#1}}
+\newcolumntype{R}{>{\raggedright\arraybackslash}X}
+\usepackage{natbib}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[section]{placeins}
+
+\usepackage{tikz}
+\usetikzlibrary{calc,shapes,arrows,positioning,decorations.pathreplacing,decorations.pathmorphing,matrix,shapes.symbols}
+
+\title{Face Recognition and Tracking}
+\subtitle{using OpenCV, Python, and cheap hardware}
+\author{Steve Burt}
 
 \begin{document}
 
-\begin{frame}{}
+\begin{frame}[plain]
+\titlepage
+\end{frame}
+\begin{frame}{Architecture}
+
+\centering
+\parbox{.45\textwidth}{  Data Flow\\ \\
+\includegraphics[width=\linewidth]{meta-1}}\parbox{.5\textwidth}{ State Machine\\\includegraphics[width=\linewidth]{sm}}\\
+\end{frame}
+\begin{frame}{Details}
+
+\begin{itemize}
+  \item Face detection using OpenCV Haar classifier
+  \item PyQt Gui
+\item \$9 RC plane servos
+\item AtMega328 for servo interface
+\item \$10 Webcam
+\end{itemize}
+\end{frame}
+\begin{frame}{Challenges}
+\heading{LATENCY}
+\begin{itemize}
+\item Webcam has ~200 msec latency
+\item Face detection adds about 50msec
+\end{itemize}
+Extremely detrimental for motion control
+\end{frame}
+\begin{frame}{PID Control loop, with latency compensation}
+
+\tikzstyle{block} = [draw, rectangle, 
+    minimum height=3em, minimum width=6em]
+\tikzstyle{sum} = [draw, fill=gray!20, circle, node distance=1cm]
+\tikzstyle{input} = [coordinate]
+\tikzstyle{output} = [coordinate]
+\tikzstyle{pinstyle} = [pin edge={to-,thin,black}]
+
+% The block diagram code is probably more verbose than necessary
+\begin{tikzpicture}[auto, node distance=2cm,>=latex']
+    % We start by placing the blocks
+   	\node [input, name=input] {};
+ 	\node [sum, right of=input] (sum) {};
+  	 \node [block, right of=sum] (controller) {Controller};
+
+	\node[sum, right of = controller, node distance = 3cm](newsum){};
+    \draw [->] (controller) -- node[near start,name=u] {$u$} (newsum);
+%
+     \node [block, right of=newsum, pin={[pinstyle]above:Disturbances}, node distance=2cm] (system) {System};
+ \draw[->](newsum) -- node[name=upr]{$u*$}(system);
+%	
+    \node [output, right of=system] (output) {};
+  \node [block, below of =controller, fill=gray!30, node distance = 3.5cm] (latency) {Measurement Latency};
+	\node[block,below of =system, node distance =3.5cm](measurement){Measurement};
+    % Once the nodes are placed, connecting them is easy. 
+    \draw [draw,->] (input) -- node {$r$} (sum);
+    \draw [->] (sum) -- node {$e$} (controller);
+    \draw [->] (system) -- node [name=y] {$y$}(output);
+   \draw [->] (y) |- (measurement);
+	\draw[->](measurement) -- (latency);
+
+\node [block, fill=gray!30, below of = u, node distance = 1.5cm](sd){Input Delay};
+\draw[->](u) -- (sd);
+\draw[->](sd)-| node[pos = 0.99]{$-$} (newsum);
+    \draw [->] (latency) -| node[pos=0.99] {$-$} 
+       node [near end] {$y_m$} (sum);
+
+\draw[->, style=dotted](latency) -- node[middle]{ Match } (sd);
+
+\end{tikzpicture} 
 
 
 \end{frame}
-
 \end{document}

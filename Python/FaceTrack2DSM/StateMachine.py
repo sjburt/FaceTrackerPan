@@ -73,7 +73,7 @@ class Servo:
         ## todo
         try:        
             from serial.serialutil import SerialException
-            self.p = PyBasicComms.PyBasicComms("/dev/tty.usbmodemfa1331")
+            self.p = PyBasicComms.PyBasicComms("/dev/tty.usbmodemfd121")
         except (SerialException):
             print "Couldn't open port not working"
           

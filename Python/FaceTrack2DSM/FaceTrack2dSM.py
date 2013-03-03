@@ -77,7 +77,7 @@ class faceWidget(QtGui.QWidget):
  
 #         create grayscale version
         self.grayscale = cv.CreateImage(self.image_size, 8, 1)
-        self.smallgray = cv.CreateImage((160,120),8,1)
+        self.smallgray = cv.CreateImage((640,480),8,1)
         
         self.xscale = frame.width/self.smallgray.width
         self.yscale = frame.height/self.smallgray.height
@@ -160,7 +160,7 @@ class faceWidget(QtGui.QWidget):
         cv.EqualizeHist(self.smallgray, self.smallgray)
         
         # detect objects
-        self.faces = cv.HaarDetectObjects(image=self.grayscale, cascade=self.cascade, storage=self.storage, scale_factor=1.2,\
+        self.faces = cv.HaarDetectObjects(image=self.smallgray , cascade=self.cascade, storage=self.storage, scale_factor=1.2,\
                                      min_neighbors=2, flags=cv.CV_HAAR_DO_CANNY_PRUNING,min_size=(75,75))
        
             
