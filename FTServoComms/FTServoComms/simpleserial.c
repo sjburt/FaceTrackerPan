@@ -142,6 +142,7 @@ void dirty_string(uint8_t* dirty, const uint8_t *clean)
 
 char getMessage(SerMsg *msg,uint16_t *data)
 {
+	static uint8_t alt=0;
 	uint8_t raw_string[10];
 	uint8_t cln_string[10];
 	static uint16_t yaw =512;
@@ -208,15 +209,33 @@ char getMessage(SerMsg *msg,uint16_t *data)
 			switch(cln_string[0])
 			{
 				case 'p':
-				*msg = YAWPOS;
-				*data = (cln_string[1] << 8) + cln_string[2];
-				return 0; //success!
+				if (cln_string[1]=='p')
+				{
+					*msg = YAWPOS;
+					*data = (cln_string[2] << 8) + cln_string[3];
+					return 0; //success!
+				}
+				else
+				{
+					return -1;
+				}
 				break;
+				
 				case 'o':
-				*msg = PITCHPOS;
-				*data = (cln_string[1] << 8) + cln_string[2];
-				return 0; //success!
+				if( cln_string[1]=='o')
+				{
+					
+					*msg = PITCHPOS;
+					*data = (cln_string[2] << 8) + cln_string[3];
+					return 0; //success!
+				} else
+				{
+					return -1;
+				}
+				
+				
 				break;
+				
 				case 's':
 				*msg = STOP;
 				*data = 0;
@@ -227,8 +246,21 @@ char getMessage(SerMsg *msg,uint16_t *data)
 		}
 		else
 		{
-			uart_putc('p');
-			uart_putc('o');
+			switch(alt){
+				case 0:
+				uart_putc('o');
+				alt =1;
+				break;
+				case 1:
+				uart_putc('p');
+				alt=0;
+				break;
+				default:
+				uart_putc('p');
+				alt = 0;
+				break;
+			}
+			
 		}
 		break;
 		default:
