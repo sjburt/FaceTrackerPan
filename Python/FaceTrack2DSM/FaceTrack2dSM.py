@@ -160,8 +160,8 @@ class faceWidget(QtGui.QWidget):
         cv.EqualizeHist(self.smallgray, self.smallgray)
         
         # detect objects
-        self.faces = cv.HaarDetectObjects(image=self.smallgray, cascade=self.cascade, storage=self.storage, scale_factor=1.2,\
-                                     min_neighbors=2, flags=cv.CV_HAAR_DO_CANNY_PRUNING)
+        self.faces = cv.HaarDetectObjects(image=self.grayscale, cascade=self.cascade, storage=self.storage, scale_factor=1.2,\
+                                     min_neighbors=2, flags=cv.CV_HAAR_DO_CANNY_PRUNING,min_size=(75,75))
        
             
 

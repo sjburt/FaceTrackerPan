@@ -1,7 +1,9 @@
 import sys
-import cv
+
 import cv2
-import time
+import cv2.cv as cv
+
+
 class FaceDetect():
     def __init__(self):
         cv.NamedWindow ("CamShiftDemo", 1)
@@ -10,18 +12,17 @@ class FaceDetect():
         capture_size = (640,480)
         cv.SetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_WIDTH, capture_size[0])
         cv.SetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_HEIGHT, capture_size[1])
- 
+        self.classifier = cv2.CascadeClassifier('lbpcascade_frontalface.xml')
     def detect(self):
-        cv.CvtColor(self.frame, self.grayscale, cv.CV_RGB2GRAY)
+        cv2.CvtColor(self.frame, self.grayscale, cv.CV_RGB2GRAY)
  
         #equalize histogram
-        cv.EqualizeHist(self.grayscale, self.grayscale)
+        cv2.EqualizeHist(self.grayscale, self.grayscale)
         
         faces = None
         # detect objects
-        faces = cv.HaarDetectObjects(image=self.grayscale, cascade=self.cascade, storage=self.storage, scale_factor=1.2,\
-                                     min_neighbors=4, flags=cv.CV_HAAR_DO_CANNY_PRUNING,min_size=(75,75))
-         
+        faces = self.classifier.detectMultiScale(self.grayscale, 1.1, 2, 0 )
+
         if faces:
             print 'face detected!'
             for i in faces:
@@ -42,19 +43,18 @@ class FaceDetect():
  
         # create storage
         self.storage = cv.CreateMemStorage(128)
-        self.cascade = cv.Load('haarcascade_frontalface_default.xml')
-              
+
+        
         
         while 1:
             # do forever
             # capture the current frame
-            tm = time.time()
             self.frame = cv.QueryFrame(self.capture)
             if self.frame is None:
                 break
  
             # mirror
-     #       cv.Flip(self.frame, None, 1)
+            cv.Flip(self.frame, None, 1)
  
             # face detection
             self.detect()
@@ -63,7 +63,7 @@ class FaceDetect():
             cv.ShowImage('CamShiftDemo', self.frame)
             # handle events
             k = cv.WaitKey(10)
-            print time.time() -tm
+ 
             if k == 0x1b: # ESC
                 print 'ESC pressed. Exiting ...'
                 break
@@ -72,4 +72,5 @@ class FaceDetect():
 if __name__ == "__main__":
     print "Press ESC to exit ..."
     face_detect = FaceDetect()
-    face_detect.run() 
+    face_detect.run() # -*- coding: utf-8 -*-
+
