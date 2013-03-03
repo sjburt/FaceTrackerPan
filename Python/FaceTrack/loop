@@ -1,0 +1,7 @@
+#/bin/bash
+
+while :
+do
+	python camgrab.py
+	read -p "[enter] to run again"
+done

@@ -1,30 +1,18 @@
 % small.tex
 \documentclass{beamer}
-\usepackage{graphicx,color,setspace,hyperref}                           % Includes packages for the LaTeX document.
-\usepackage[left=1.5in,top=1.25in,bottom=1.25in,right=1.25in]{geometry} % Sets the proper margins.
- \usepackage{mathptmx}
-\setlength{\parindent}{.5in} % Do not automatically indent the paragraphs.
-
-%\usepackage{cite}
+\usepackage{graphicx}                           % Includes packages for the LaTeX document.
+%\usepackage[left=1.5in,top=1.25in,bottom=1.25in,right=1.25in]{geometry} % Sets the proper margins.
+\usepackage{mathptmx}
+\usetheme{default}%\usepackage{cite}
+\usecolortheme{dove}
+\useinnertheme{rounded}
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{gensymb}
 
-\usepackage{algpseudocode}
-\usepackage{algorithm}
-
-\usepackage{array}
-\usepackage{tabularx}
-\renewcommand{\tabularxcolumn}[1]{p{#1}}
-\newcolumntype{R}{>{\raggedright\arraybackslash}X}
-\usepackage{natbib}
-\usepackage{caption}
-\usepackage{subcaption}
-\usepackage[section]{placeins}
-
 \usepackage{tikz}
 \usetikzlibrary{calc,shapes,arrows,positioning,decorations.pathreplacing,decorations.pathmorphing,matrix,shapes.symbols}
-
+\setbeamertemplate{navigation symbols}{}%remove navigation symbols
 \title{Face Recognition and Tracking}
 \subtitle{using OpenCV, Python, and cheap hardware}
 \author{Steve Burt}
@@ -32,7 +20,12 @@
 \begin{document}
 
 \begin{frame}[plain]
-\titlepage
+\begin{center}
+\LARGE Simple 2-axis face tracking\\
+\LARGE with cheap hardware\\
+\includegraphics[width=3in]{board}
+\Large Steven Burt 
+\end{center}
 \end{frame}
 \begin{frame}{Architecture}
 
@@ -42,23 +35,42 @@
 \end{frame}
 \begin{frame}{Details}
 
+\begin{columns}
+  \begin{column}{0.7\textwidth}
 \begin{itemize}
-  \item Face detection using OpenCV Haar classifier
-  \item PyQt Gui
-\item \$9 RC plane servos
-\item AtMega328 for servo interface
+  \item Face detection with Haar classifier, using OpenCV
+  \item PyQt GUI
+\item \$9 RC servos
+\item AtMEGA328P for servo interface
 \item \$10 Webcam
 \end{itemize}
-\end{frame}
-\begin{frame}{Challenges}
-\heading{LATENCY}
+\end{column}
+\begin{column}{.3\textwidth}
+\begin{figure}
+\includegraphics[width=1in]{facetrack2d}
+\end{figure}
+
+\end{column}
+\end{columns}
+\begin{columns}
+  \begin{column}{2in}
+\begin{figure}
+\includegraphics[width=1.5in]{latency}
+\end{figure}
+  \end{column}
+\begin{column}{.6\textwidth}
+\textbf{Control Issues:}
 \begin{itemize}
 \item Webcam has ~200 msec latency
 \item Face detection adds about 50msec
+\item Bad for feedback control!
 \end{itemize}
-Extremely detrimental for motion control
+Latency compensation via control signal feed-back
+\end{column}
+\end{columns}
 \end{frame}
-\begin{frame}{PID Control loop, with latency compensation}
+
+\begin{frame}{Control loop}
 
 \tikzstyle{block} = [draw, rectangle, 
     minimum height=3em, minimum width=6em]
@@ -77,7 +89,7 @@ Extremely detrimental for motion control
 	\node[sum, right of = controller, node distance = 3cm](newsum){};
     \draw [->] (controller) -- node[near start,name=u] {$u$} (newsum);
 %
-     \node [block, right of=newsum, pin={[pinstyle]above:Disturbances}, node distance=2cm] (system) {System};
+     \node [block, right of=newsum, node distance=2cm] (system) {System};
  \draw[->](newsum) -- node[name=upr]{$u*$}(system);
 %	
     \node [output, right of=system] (output) {};
@@ -96,7 +108,7 @@ Extremely detrimental for motion control
     \draw [->] (latency) -| node[pos=0.99] {$-$} 
        node [near end] {$y_m$} (sum);
 
-\draw[->, style=dotted](latency) -- node[middle]{ Match } (sd);
+\draw[->, style=dotted](latency) -- node{ Match } (sd);
 
 \end{tikzpicture} 
 

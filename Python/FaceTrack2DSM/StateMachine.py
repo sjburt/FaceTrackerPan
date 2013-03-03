@@ -15,11 +15,11 @@ from PyQt4 import QtCore
 YAW_MIN = 50
 YAW_MAX = 1000
 YAW_DEF = 512
-PITCH_MAX = 550
-PITCH_MIN = 250
-PITCH_DEF = 350
+PITCH_MAX = 500
+PITCH_MIN = 100
+PITCH_DEF = 250
 
-SEARCH_STEP =15
+SEARCH_STEP =10
 
 class StateEnum():
     """ _Vals='no_change','Init','WaitLong','Acquired','WaitL','WaitR','ScanL','ScanR']"""
