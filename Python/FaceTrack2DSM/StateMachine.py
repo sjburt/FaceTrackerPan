@@ -17,9 +17,9 @@ YAW_MAX = 1000
 YAW_DEF = 512
 PITCH_MAX = 550
 PITCH_MIN = 250
-PITCH_DEF = 350
+PITCH_DEF = 400
 
-SEARCH_STEP =15
+SEARCH_STEP =10
 
 class StateEnum():
     """ _Vals='no_change','Init','WaitLong','Acquired','WaitL','WaitR','ScanL','ScanR']"""
@@ -73,7 +73,9 @@ class Servo:
         ## todo
         try:        
             from serial.serialutil import SerialException
-            self.p = PyBasicComms.PyBasicComms("/dev/tty.usbmodemfd121")
+            #self.p = PyBasicComms.PyBasicComms("/dev/tty.usbmodemfd121")
+            self.p = PyBasicComms.PyBasicComms("COM3")
+
         except (SerialException):
             print "Couldn't open port not working"
           
