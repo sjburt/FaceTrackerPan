@@ -33,22 +33,25 @@ class SerThread(threading.Thread):
         self.portname = portname
         self.flag = flag
         self.ser.flushInput()
+        self.ser.flushOutput()
         
     def handshake(self):
+        self.ser.setDTR(False)
+        time.sleep(.1)
+        self.ser.setDTR(True)
         print "waiting for boot"
-        time.sleep(4)
-        done = 0
+        time.sleep(2)
+        self.ser.flushInput()
+        done = False
         print "starting handshake"
         while not done :        
             self.ser.write('a')
-            print "a" 
             self.ser.timeout=5
             ch = self.ser.read(1)
             print ch
             if ch == 'b':
-                print "b,c"
                 self.ser.write('c')
-                done = 1
+                done = True
             else:
                 print "?"
         if self.ser.read(1)=='d':
@@ -62,14 +65,14 @@ class SerThread(threading.Thread):
     def run(self):
         while (self.flag.isSet()):
             data = self.ser.read(1)   
-
             if data == "p":
-                packet=dirty('p'+chr((int(self.yaw)>>8))+chr(self.yaw%256))
+                packet=dirty('pp'+chr((int(self.yaw)>>8))+chr(self.yaw%256))
             elif data == "o":
-                packet=dirty('o'+chr((int(self.pitch)>>8))+chr(self.pitch%256))
-                   
+                packet=dirty('oo'+chr((int(self.pitch)>>8))+chr(self.pitch%256))
             self.ser.write(packet)
-               
+            print self.yaw, self.pitch
+
+              
     def updateyaw(self,newyaw):
         if newyaw>1023:
             newyaw=1023
@@ -96,7 +99,9 @@ class PyBasicComms:
         self.sthread=SerThread(self.flag,portname)
         self.sthread.updateyaw(self.yaw)
         self.sthread.updatepitch(self.pitch)
-        self.sthread.daemon=True
+        self.sthread.isdaemon=True
+    
+    
     def handshake(self):
 
         self.sthread.handshake()
@@ -147,15 +152,16 @@ class PyBasicComms:
                 self.moveUp()
             if key[0] == "s":
                 self.moveDown()
+            if key[0] == "g":
+                self.setyaw(800);
                 
         self.flag.clear()
         self.sthread.join()   
-        self.sthread.stop()
         
     
 
 def main():
-    portname = "COM3"
+    portname = "/dev/tty.usbmodemfd121"
     p = PyBasicComms(portname)
     p.testmode()
 

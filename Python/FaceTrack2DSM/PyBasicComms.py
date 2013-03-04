@@ -10,11 +10,9 @@ import time
 def dirty(clean_packet):
     
     dirty_packet = ""
-
     dirty_packet = dirty_packet + '\x7F'
 
     for i,c in enumerate(clean_packet):
-
         if (c == '\x7e') or (c=='\x7f'):
             dirty_packet = dirty_packet + '\x7E'
             dirty_packet = dirty_packet + chr(bytearray(c)[0] ^ 0x20)
@@ -64,15 +62,14 @@ class SerThread(threading.Thread):
         
     def run(self):
         while (self.flag.isSet()):
+            
             data = self.ser.read(1)   
-
             if data == "p":
                 packet=dirty('p'+'p'+chr((int(self.yaw)>>8))+chr(self.yaw%256))
-             
             elif data == "o":
                 packet=dirty('o'+'o'+chr((int(self.pitch)>>8))+chr(self.pitch%256))
- 
             self.ser.write(packet)
+            print packet
               
     def updateyaw(self,newyaw):
         if newyaw>1023:
@@ -94,23 +91,23 @@ class SerThread(threading.Thread):
 
 class PyBasicComms:
     yaw   = 512 
-    pitch = 400 
+    pitch = 300 
     def __init__(self,portname):
         self.flag = threading.Event()
         self.sthread=SerThread(self.flag,portname)
         self.sthread.updateyaw(self.yaw)
         self.sthread.updatepitch(self.pitch)
         self.sthread.daemon=True
+    
     def handshake(self):
 
         self.sthread.handshake()
         self.flag.set()
-        
         self.sthread.start()
         
     def setyaw(self,yaw):
         self.yaw = yaw
-        self.sthread.updateyaw(self.yaw)
+        self.sthread.updateyaw(yaw)
     def moveCW(self):
         self.yaw = self.yaw+25
         self.sthread.updateyaw(self.yaw)
@@ -158,7 +155,7 @@ class PyBasicComms:
     
 
 def main():
-    portname = "/dev/tty.usbmodemfd121"
+    portname = "/dev/tty.usbmodemfa131"
     p = PyBasicComms(portname)
     p.testmode()
 

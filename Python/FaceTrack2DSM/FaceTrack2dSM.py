@@ -55,7 +55,7 @@ class faceWidget(QtGui.QWidget):
     def __init__(self, parent=None):
 
         QtGui.QWidget.__init__(self)
-        self._capture = cv.CreateCameraCapture(0)
+        self._capture = cv.CreateCameraCapture(1)
         self.time = time.time()
         if not self._capture:
             print "Error opening capture device"
@@ -77,7 +77,7 @@ class faceWidget(QtGui.QWidget):
  
 #         create grayscale version
         self.grayscale = cv.CreateImage(self.image_size, 8, 1)
-        self.smallgray = cv.CreateImage((640,480),8,1)
+        self.smallgray = cv.CreateImage((160,120),8,1)
         
         self.xscale = frame.width/self.smallgray.width
         self.yscale = frame.height/self.smallgray.height
@@ -92,7 +92,7 @@ class faceWidget(QtGui.QWidget):
 
         
 
-        self._timer.start(50)
+        self._timer.start(100)
         
 
     
@@ -161,7 +161,7 @@ class faceWidget(QtGui.QWidget):
         
         # detect objects
         self.faces = cv.HaarDetectObjects(image=self.smallgray , cascade=self.cascade, storage=self.storage, scale_factor=1.2,\
-                                     min_neighbors=2, flags=cv.CV_HAAR_DO_CANNY_PRUNING,min_size=(75,75))
+                                     min_neighbors=2, flags=cv.CV_HAAR_DO_CANNY_PRUNING,min_size=(20,20))
        
             
 
