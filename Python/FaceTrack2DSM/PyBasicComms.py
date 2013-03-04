@@ -107,7 +107,7 @@ class PyBasicComms:
         
     def setyaw(self,yaw):
         self.yaw = yaw
-        self.sthread.updateyaw(yaw)
+        self.sthread.updateyaw(self.yaw)
     def moveCW(self):
         self.yaw = self.yaw+25
         self.sthread.updateyaw(self.yaw)
@@ -155,7 +155,7 @@ class PyBasicComms:
     
 
 def main():
-    portname = "/dev/tty.usbmodemfa131"
+    portname = "COM3"
     p = PyBasicComms(portname)
     p.testmode()
 

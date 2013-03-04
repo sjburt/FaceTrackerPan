@@ -58,9 +58,13 @@ int main(void)
 		if (err==0)
 		{
 			setServo(msg,dest);
+			PORTB|=(1<<PB5); 
 		}		
 		_delay_ms(20);
+		PORTB&=~(1<<PB5);
+		_delay_ms(20);
     }
+	 
 }
 
 

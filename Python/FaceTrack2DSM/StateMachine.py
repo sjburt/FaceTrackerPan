@@ -15,9 +15,9 @@ from PyQt4 import QtCore
 YAW_MIN = 50
 YAW_MAX = 1000
 YAW_DEF = 512
-PITCH_MAX = 700
-PITCH_MIN = 100
-PITCH_DEF = 250
+PITCH_MAX = 550
+PITCH_MIN = 250
+PITCH_DEF = 400
 
 SEARCH_STEP =10
 
@@ -73,7 +73,9 @@ class Servo:
         ## todo
         try:        
             from serial.serialutil import SerialException
-            self.p = PyBasicComms.PyBasicComms("/dev/tty.usbmodemfa131")
+            #self.p = PyBasicComms.PyBasicComms("/dev/tty.usbmodemfd121")
+            self.p = PyBasicComms.PyBasicComms("COM3")
+
         except (SerialException):
             print "Couldn't open port not working"
           
@@ -204,7 +206,7 @@ class stateMachine(QtCore.QThread):
             self.pitchsig.emit(self.pitch)
             self.yawsig.emit(self.yaw)   
             self.status.emit(str(self.state))
-            time.sleep(.2)
+            time.sleep(.05)
         
     def handleEvent(self,event):
         """Takes event and returns what state should be switched too """
