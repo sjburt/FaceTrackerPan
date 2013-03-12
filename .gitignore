@@ -15,3 +15,7 @@ TestCode/TestCode/Debug/*
 *.pyc
 
 *.pyc
+
+/Python/v2FaceTrack/_eric4project/*
+
+Python/v2FaceTrack/.ropeproject/*
