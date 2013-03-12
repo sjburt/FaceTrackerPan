@@ -19,3 +19,6 @@ TestCode/TestCode/Debug/*
 /Python/v2FaceTrack/_eric4project/*
 
 Python/v2FaceTrack/.ropeproject/*
+*.e4q
+
+*.e4t
