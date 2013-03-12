@@ -17,30 +17,28 @@ class State():
     def __init__(self):
         pass
         
-    def enterState(self):
+    def onEnter(self, context):
         pass
     
-    def handleEvent(self,event):
+    def handleEvent(self,event, context):
         print "Error: event handler not overridden for state ", self.__name
         raise TypeError
         
-    def onStep(self):
+    def onStep(self, context):
         pass
     
         
 class Event():
     
-    def __init__(self):
+    def __init__():
         pass
         
-   
-
+    def _name():
+        print 'hi'
 
 
 def main():
-    s = State()
-    
-    e = Event()
+
     
 if __name__ == "__main__":
     main()
