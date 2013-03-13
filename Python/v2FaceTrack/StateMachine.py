@@ -119,10 +119,20 @@ class smStates(States):
 ev = smEvents()
 st = smStates()
 
+class fakeThread(QtCore.QThread):
+    def run(self):
+        super(fakeThread,self).run()
+        print "ran thread"
+
+    def exit(self,val):
+        super(fakeThread,self).exit(val)
+        print "got exit-",val
+
+
 class StateMachine(QtCore.QObject):
     """  A state machine.  """
     
-    
+    finished=QtCore.pyqtSignal()
     
     def __init__(self):
         super(StateMachine, self).__init__()
@@ -146,7 +156,9 @@ class StateMachine(QtCore.QObject):
             time.sleep(.2)
             event = None
             newState = None
+        self.finished.emit()
         print "finished"
+       
     
     def getEvents(self):
         if self.letsStop == True:
@@ -162,16 +174,17 @@ def main():
     app = QtCore.QCoreApplication(sys.argv)
     sm = StateMachine()
     
-    th = QtCore.QThread()
+    th = fakeThread()
     sm.moveToThread(th)
     th.started.connect(sm.main)
     
     th.start()
+    
+    sm.finished.connect(th.terminate)
+    
     while th.isRunning():
-        c = raw_input('Wanna stop? y/n >')
-        print "zzzzzzzzzzzzzz   ",  c
-        if c == 'y':
-            sm.youShouldStop(True)
+        time.sleep(.5)
+        
             
         
     th.wait()
