@@ -9,9 +9,10 @@ import time
 import PyBasicComms
 import PIDff
 
+import sys
 from PyQt4 import QtCore
 
-from StateLib import State,Event
+from StateLib import State, States,Event, Events
 
 YAW_MIN = 50
 YAW_MAX = 1000
@@ -23,61 +24,163 @@ PITCH_DEF = 400
 SEARCH_STEP =10
 
 
-class Events():
+class smEvents(Events):
     class TIMER_DONE(Event):
         pass
     class ALL_DONE(Event):
         pass
     class DONE_INIT(Event):
         pass
+    class STOP(Event):
+        pass
+
+        
+    def __init__(self):
+        super(smEvents, self).__init__()
+        print self._events
 
 
-class StateMachine():
-"""  A state machine.  """
-
-    context.QUIT_FLAG = False
+class smStates(States):
     
-	class START(State):
+    def __init__(self):
+        super(smStates, self).__init__()
+        print self._states
+    
 
-		def handleEvent(self, event, context):
-			if event == Events.DONE_INIT
-				return self.WAIT_LONG
-		def onStep(self,context):
-			print "Starting..."
-			
+    
+    class INIT(State):
+        def onStep(self):
+            return ev.getEvent('DONE_INIT')
+        def handleEvent(self, event):
+            if event is ev.getEvent('DONE_INIT'):
+                return st.getState('WAIT_LONG')
 
-		def onEnter:
-			print "entering state"
-			
-	
-	class WAIT_LONG(State):
-		def onEnter(self, context):
-			self.timer_end = time.time() + 5
-			print 'Started timer'
-		def handleEvent(self,event,context):
-			if event == self.TIMER_DONE
-			     return self.END
+    class WAIT_LONG(State):
+        def onEnter(self):
+            self.endTime = time.time()+20
+        def onStep(self):
 
-    class END(State):
-        def onEnter(self, context)::
-            print "ending"
-        def onStep(self, context)::
-            context.QUIT_FLAG = True
+            if self.endTime < time.time():
+                print "timer done"
+                return ev.getEvent('TIMER_DONE')
+            else:
+                return None
+        def handleEvent(self,  event):
+            if event is ev.getEvent('TIMER_DONE'):
+                return st.getState('HALT')
+            elif event is ev.getEvent('STOP'):
+                return st.getState('HALT')
+            else:
+                return None
+
+
+# TODO: TRACKING, LEFT,RIGHT,ETC
+    class TRACKING(State):
+        def onEnter(self):
+            pass
+        def onStep(self):
+            pass
+        def handleEvent(self):
+            pass
+    class WAIT_L(State):
+        def onEnter(self):
+            pass
+        def onStep(self):
+            pass
+        def handleEvent(self):
+            pass
+    class WAIT_R(State):
+        def onEnter(self):
+            pass
+        def onStep(self):
+            pass
+        def handleEvent(self):
+            pass
+    class SCAN_L(State):
+        def onEnter(self):
+            pass
+        def onStep(self):
+            pass
+        def handleEvent(self):
+            pass
+        
+    class SCAN_R(State):
+        def onEnter(self):
+            pass
+        def onStep(self):
+            pass
+        def handleEvent(self):
+            pass
             
+    class HALT(State):
+        def handleEvent(self):
+            return None
+
+ev = smEvents()
+st = smStates()
+
+class StateMachine(QtCore.QObject):
+    """  A state machine.  """
     
-    class __init__():
+    
+    
+    def __init__(self):
+        super(StateMachine, self).__init__()
+        self.letsStop = False
+
+    
+    def main(self):
+        currentState = st.getState('INIT')
+        currentState.onEnter()
+        while currentState is not st.getState('HALT'):
+
+            event = self.getEvents()
+            if event is None:
+                event = currentState.onStep()
+            if event is not None:
+                newState = currentState.handleEvent(event)
+            if newState is not None:
+                newState.onEnter()
+                currentState = newState
+                
+            time.sleep(.2)
+            event = None
+            newState = None
+        print "finished"
+    
+    def getEvents(self):
+        if self.letsStop == True:
+            return ev.getEvent('STOP')
+        else:    
+            return None
+
+    def youShouldStop(self, signal):
+        self.letsStop=signal
+
+def main():
+    
+    app = QtCore.QCoreApplication(sys.argv)
+    sm = StateMachine()
+    
+    th = QtCore.QThread()
+    sm.moveToThread(th)
+    th.started.connect(sm.main)
+    
+    th.start()
+    while th.isRunning():
+        c = raw_input('Wanna stop? y/n >')
+        print "zzzzzzzzzzzzzz   ",  c
+        if c == 'y':
+            sm.youShouldStop(True)
+            
         
-        self.state = START
-        
-    class run():
-        context = None
-        while not context.QUIT_FLAG:
-            self.state.onStep(context)
-            event = self.CheckForEvents(, context)
-            newstate = self.state.handleEvent( event, context)
-            if newstate is not None:
-                state = newstate
-                state.onEnter(context)
-        
-        
+    th.wait()
+    
+    sys.exit(app.exec_())
+    
+    
+if __name__ == "__main__":
+    main()
+
+
             
