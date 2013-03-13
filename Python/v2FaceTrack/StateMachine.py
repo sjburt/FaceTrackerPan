@@ -177,13 +177,15 @@ def main():
     th = fakeThread()
     sm.moveToThread(th)
     th.started.connect(sm.main)
+    th.finished.connect(sm.deleteLater)
+    sm.finished.connect(th.quit)
     
     th.start()
     
-    sm.finished.connect(th.terminate)
+    
     
     while th.isRunning():
-        time.sleep(.5)
+        time.sleep(5)
         
             
         
