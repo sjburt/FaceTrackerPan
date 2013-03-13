@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project v2FaceTrack -->
-<!-- Saved: 2013-03-10, 14:07:14 -->
+<!-- Saved: 2013-03-13, 11:02:26 -->
 <!-- Copyright (C) 2013 ,  -->
 <Project version="4.6">
   <Language>en</Language>
@@ -21,6 +21,7 @@
     <Source>StateMachine.py</Source>
     <Source>utils.py</Source>
     <Source>__init__.py</Source>
+    <Source>ThreadTest.py</Source>
   </Sources>
   <Forms>
   </Forms>
