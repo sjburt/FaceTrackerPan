@@ -57,7 +57,7 @@ class smStates(States):
 
     class WAIT_LONG(State):
         def onEnter(self):
-            self.endTime = time.time()+20
+            self.endTime = time.time()+5
         def onStep(self):
 
             if self.endTime < time.time():
@@ -119,14 +119,15 @@ class smStates(States):
 ev = smEvents()
 st = smStates()
 
-class fakeThread(QtCore.QThread):
+class FakeThread(QtCore.QThread):
     def run(self):
-        super(fakeThread,self).run()
         print "ran thread"
-
+        super(fakeThread,self).run()
+        
     def exit(self,val):
-        super(fakeThread,self).exit(val)
         print "got exit-",val
+        super(fakeThread,self).exit(val)
+        
 
 
 class StateMachine(QtCore.QObject):
@@ -154,6 +155,7 @@ class StateMachine(QtCore.QObject):
                 currentState = newState
                 
             time.sleep(.2)
+            print currentState
             event = None
             newState = None
         self.finished.emit()
@@ -174,23 +176,14 @@ def main():
     app = QtCore.QCoreApplication(sys.argv)
     sm = StateMachine()
     
-    th = fakeThread()
+    th = FakeThread()
     sm.moveToThread(th)
     th.started.connect(sm.main)
     th.finished.connect(sm.deleteLater)
     sm.finished.connect(th.quit)
     
     th.start()
-    
-    
-    
-    while th.isRunning():
-        time.sleep(5)
-        
-            
-        
-    th.wait()
-    
+ 
     sys.exit(app.exec_())
     
     
