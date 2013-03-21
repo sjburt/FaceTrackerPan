@@ -2,6 +2,7 @@
 
 # A basic communications with the board
 
+import os
 import serial
 import threading
 import time
@@ -68,11 +69,12 @@ class SerThread(threading.Thread):
 
             if data == "p":
                 packet=dirty('p'+'p'+chr((int(self.yaw)>>8))+chr(self.yaw%256))
+                self.ser.write(packet)
              
             elif data == "o":
                 packet=dirty('o'+'o'+chr((int(self.pitch)>>8))+chr(self.pitch%256))
- 
-            self.ser.write(packet)
+                self.ser.write(packet)
+            
               
     def updateyaw(self,newyaw):
         if newyaw>1023:
@@ -95,8 +97,15 @@ class SerThread(threading.Thread):
 class PyBasicComms:
     yaw   = 512 
     pitch = 400 
-    def __init__(self,portname):
+    def __init__(self,portname=None):
         self.flag = threading.Event()
+        
+        if portname is None:
+            if os.name == 'nt':
+                portname = 'COM5'
+            elif os.name == 'posix':
+                raise RuntimeError,'set the usb port name'
+        
         self.sthread=SerThread(self.flag,portname)
         self.sthread.updateyaw(self.yaw)
         self.sthread.updatepitch(self.pitch)
@@ -158,8 +167,8 @@ class PyBasicComms:
     
 
 def main():
-    portname = "COM3"
-    p = PyBasicComms(portname)
+    
+    p = PyBasicComms()
     p.testmode()
 
     

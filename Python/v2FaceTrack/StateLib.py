@@ -8,11 +8,12 @@ Created on Fri Mar 08 21:57:36 2013
 """
 import time
 import inspect
+from PyQt4 import QtCore
 
-class State(object):
+class State(QtCore.QObject):
     def __init__(self, container):
         self.container = container
-        pass
+
         
     def handleEvent(self,  event):
         print "Error, handleEvent must be overridden in ",  type(self)
@@ -29,8 +30,9 @@ class State(object):
        
        
 
-class States(object):
+class States(QtCore.QObject):
     _states={}
+    parent=None
     def __init__(self):
         super(States, self).__init__()
         for (name, aclass) in inspect.getmembers(self,  predicate = inspect.isclass):
@@ -44,8 +46,11 @@ class States(object):
     
     def getState(self, name):
         return self._states[name]
+        
+    def registerParent(self, parent):
+        self.parent = parent
 
-class Event(object):
+class Event(QtCore.QObject):
     def __init__(self, container):
         self.container = container
     def getName(self): 
@@ -53,7 +58,7 @@ class Event(object):
        
        
         
-class Events(object):
+class Events(QtCore.QObject):
     _events={}
     def __init__(self):
         super(Events, self).__init__()

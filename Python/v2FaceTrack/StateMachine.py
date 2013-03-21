@@ -8,7 +8,6 @@ Created on Fri Mar 01 19:14:32 2013
 import time
 import PyBasicComms
 import PIDff
-
 import sys
 from PyQt4 import QtCore
 
@@ -33,6 +32,8 @@ class smEvents(Events):
         pass
     class STOP(Event):
         pass
+    class SAW_FACE(Event):
+        pass
 
         
     def __init__(self):
@@ -49,25 +50,37 @@ class smStates(States):
 
     
     class INIT(State):
+        
         def onStep(self):
+            self.parent.Comms.handshake()
+            self.parent.Comms.setYaw(YAW_DEF)
+            self.parent.Comms.setPitch(PITCH_DEF)
+            
             return ev.getEvent('DONE_INIT')
+            
         def handleEvent(self, event):
             if event is ev.getEvent('DONE_INIT'):
                 return st.getState('WAIT_LONG')
 
     class WAIT_LONG(State):
+        
+        
         def onEnter(self):
-            self.endTime = time.time()+5
+            self.endTime = time.time()+3
+            
+            
         def onStep(self):
-
             if self.endTime < time.time():
                 print "timer done"
                 return ev.getEvent('TIMER_DONE')
             else:
                 return None
+                
         def handleEvent(self,  event):
             if event is ev.getEvent('TIMER_DONE'):
-                return st.getState('HALT')
+                return st.getState('SCAN_L')
+            elif event is ev.getEvent('SAW_FACE'):
+                return st.getState('TRACKING')
             elif event is ev.getEvent('STOP'):
                 return st.getState('HALT')
             else:
@@ -76,10 +89,13 @@ class smStates(States):
 
 # TODO: TRACKING, LEFT,RIGHT,ETC
     class TRACKING(State):
+        pid = PIDff.PIDff()
         def onEnter(self):
-            pass
+            self.pid.reset()
         def onStep(self):
-            pass
+            
+            
+            
         def handleEvent(self):
             pass
     class WAIT_L(State):
@@ -138,6 +154,13 @@ class StateMachine(QtCore.QObject):
     def __init__(self):
         super(StateMachine, self).__init__()
         self.letsStop = False
+        
+        st.registerParent(self)
+        
+        
+        
+        self.Comms = PyBasicComms()
+        
 
     
     def main(self):
@@ -174,6 +197,8 @@ class StateMachine(QtCore.QObject):
 def main():
     
     app = QtCore.QCoreApplication(sys.argv)
+    
+    
     sm = StateMachine()
     
     th = FakeThread()
