@@ -12,6 +12,7 @@ Software to test the camera frame rate in QT
 """
 from PyQt4 import QtCore, QtGui
 import cv2.cv as cv
+import cv2
 import sys
 import time
 
@@ -35,9 +36,7 @@ class IplQImage(QtGui.QImage):
         ])
         self.__imagedata = rgba.tostring()
         super(IplQImage,self).__init__(self.__imagedata, iplimage.width, iplimage.height, QtGui.QImage.Format_RGB32)
-    
-    
-    
+        
     
 class camWidget(QtGui.QWidget):
     gotFrame = QtCore.pyqtSignal()
@@ -45,13 +44,18 @@ class camWidget(QtGui.QWidget):
     def __init__(self, parent=None):
         super(camWidget, self).__init__()
 
-        self._capture = cv.CreateCameraCapture(-1)
+        self._capture = cv2.VideoCapture(0)
+ 
+
+#        except:
+#            print 'error opening camera: ' , sys.exc_info()[0]
+#            
+#            raise
+        
+        
         self.time = time.time()
-        if not self._capture:
-            print "Error opening capture device"
-            sys.exit(1)
-            
-        frame = cv.QueryFrame(self._capture)
+        ret, imagearray = self._capture.read()
+        frame=cv.fromarray(imagearray)
         self.setMinimumSize(frame.width,frame.height)
         self.setMaximumSize(self.minimumSize())
 
@@ -61,17 +65,17 @@ class camWidget(QtGui.QWidget):
         self._timer = QtCore.QTimer(self)
         self._timer.timeout.connect(self.getFrame)
         self.time = time.time()
-        self._timer.start(10)
+        self._timer.start(1)
       #  QtCore.QTimer.singleShot(50, self.getFrame)
         
     def getFrame(self):
-        self._frame = cv.QueryFrame(self._capture)
-        
-        self._image = IplQImage(self._frame)
+        ret, imagearray= self._capture.read()
+ #       frame = cv.fromarray(imagearray)
+ #       self._image = IplQImage(self._frame)
+  #      self._image = QtGui.QImage(imagearray.tostring(), frame.width, frame.height, QtGui.QImage.Format_RGB888).rgbSwapped()
+        self._image = QtGui.QImage(imagearray.tostring(), imagearray.shape[1], imagearray.shape[0], QtGui.QImage.Format_RGB888).rgbSwapped()
         self.frametime.emit(str(1/(time.time() -self.time) ) )
         self.time = time.time()
-        
-        print 'frame: ', cv.GetCaptureProperty(self._capture, cv.CV_CAP_PROP_FPS)
         self.update()
       
         self.gotFrame.emit()
@@ -81,7 +85,11 @@ class camWidget(QtGui.QWidget):
         painter = QtGui.QPainter(self)
         painter.drawImage(QtCore.QPoint(0, 0), self._image)
         
-        
+    def closeCap(self):
+        print ('closing:', self) 
+        self._capture.release()
+      
+      
 class mainwindow(QtGui.QMainWindow):
     def __init__(self):
         
@@ -94,7 +102,7 @@ class mainwindow(QtGui.QMainWindow):
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(self.close)
-        
+
         
         
         cam = camWidget(self)
@@ -113,11 +121,13 @@ class mainwindow(QtGui.QMainWindow):
         frame.setLayout(vbox)
         
         self.setCentralWidget(frame)
+        
+        exitAction.triggered.connect(cam.closeCap)
        # cam.gotFrame.connect(cam.getFrame)
         self.show()
         
 
-
+    
 
 
 def main():
@@ -126,8 +136,10 @@ def main():
     m = mainwindow()
     
 
-    sys.exit(app.exec_())
-        
+    app.exec_()
+      
+    
+    
     
 if __name__ ==  "__main__":
     main()
